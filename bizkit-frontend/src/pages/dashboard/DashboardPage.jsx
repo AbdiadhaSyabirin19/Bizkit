@@ -45,7 +45,7 @@ export default function DashboardPage() {
   ]
 
   return (
-    <Layout>
+    <Layout tittle="Dashboard">
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
