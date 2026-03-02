@@ -1,0 +1,121 @@
+package router
+
+import (
+	"bizkit-backend/internal/handler"
+	"bizkit-backend/internal/middleware"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+)
+
+func SetupRouter() *gin.Engine {
+	r := gin.Default()
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
+
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "pong"})
+	})
+
+	api := r.Group("/api")
+	{
+		// Auth (public)
+		auth := api.Group("/auth")
+		{
+			auth.POST("/login", handler.Login)
+		}
+
+		// Protected routes
+		protected := api.Group("/")
+		protected.Use(middleware.AuthMiddleware())
+		{
+			protected.GET("/me", handler.GetMe)
+
+			// Category
+			protected.GET("/categories", handler.GetAllCategories)
+			protected.GET("/categories/:id", handler.GetCategoryByID)
+			protected.POST("/categories", handler.CreateCategory)
+			protected.PUT("/categories/:id", handler.UpdateCategory)
+			protected.DELETE("/categories/:id", handler.DeleteCategory)
+
+			// Brand
+			protected.GET("/brands", handler.GetAllBrands)
+			protected.GET("/brands/:id", handler.GetBrandByID)
+			protected.POST("/brands", handler.CreateBrand)
+			protected.PUT("/brands/:id", handler.UpdateBrand)
+			protected.DELETE("/brands/:id", handler.DeleteBrand)
+
+			// Unit
+			protected.GET("/units", handler.GetAllUnits)
+			protected.GET("/units/:id", handler.GetUnitByID)
+			protected.POST("/units", handler.CreateUnit)
+			protected.PUT("/units/:id", handler.UpdateUnit)
+			protected.DELETE("/units/:id", handler.DeleteUnit)
+
+			// Variant
+			protected.GET("/variants", handler.GetAllVariantCategories)
+			protected.GET("/variants/:id", handler.GetVariantCategoryByID)
+			protected.POST("/variants", handler.CreateVariantCategory)
+			protected.PUT("/variants/:id", handler.UpdateVariantCategory)
+			protected.DELETE("/variants/:id", handler.DeleteVariantCategory)
+
+			// Product
+			protected.GET("/products", handler.GetAllProducts)
+			protected.GET("/products/:id", handler.GetProductByID)
+			protected.POST("/products", handler.CreateProduct)
+			protected.PUT("/products/:id", handler.UpdateProduct)
+			protected.DELETE("/products/:id", handler.DeleteProduct)
+
+			// Role
+			protected.GET("/roles", handler.GetAllRoles)
+			protected.GET("/roles/:id", handler.GetRoleByID)
+			protected.POST("/roles", handler.CreateRole)
+			protected.PUT("/roles/:id", handler.UpdateRole)
+			protected.DELETE("/roles/:id", handler.DeleteRole)
+
+			// User
+			protected.GET("/users", handler.GetAllUsers)
+			protected.GET("/users/:id", handler.GetUserByID)
+			protected.POST("/users", handler.CreateUser)
+			protected.PUT("/users/:id", handler.UpdateUser)
+			protected.DELETE("/users/:id", handler.DeleteUser)
+
+			// Payment Method
+			protected.GET("/payment-methods", handler.GetAllPaymentMethods)
+			protected.GET("/payment-methods/:id", handler.GetPaymentMethodByID)
+			protected.POST("/payment-methods", handler.CreatePaymentMethod)
+			protected.PUT("/payment-methods/:id", handler.UpdatePaymentMethod)
+			protected.DELETE("/payment-methods/:id", handler.DeletePaymentMethod)
+
+			// Promo
+			protected.GET("/promos", handler.GetAllPromos)
+			protected.GET("/promos/:id", handler.GetPromoByID)
+			protected.POST("/promos", handler.CreatePromo)
+			protected.PUT("/promos/:id", handler.UpdatePromo)
+			protected.DELETE("/promos/:id", handler.DeletePromo)
+
+			// Sales
+			protected.POST("/sales", handler.CreateSale)
+			protected.GET("/sales", handler.GetAllSales)
+			protected.GET("/sales/:id", handler.GetSaleByID)
+			protected.GET("/sales/daily", handler.GetDailySales)
+
+			// Laporan
+			protected.GET("/reports/sales", handler.GetSalesReport)
+			protected.GET("/reports/trend", handler.GetTrendReport)
+			protected.GET("/reports/attendance", handler.GetAttendanceReport)
+			protected.GET("/reports/shift", handler.GetShiftReport)
+
+			// Setting
+			protected.GET("/settings", handler.GetSetting)
+			protected.PUT("/settings", handler.UpdateSetting)
+		}
+	}
+
+	return r
+}
