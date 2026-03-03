@@ -17,6 +17,7 @@ import SettingPage from './pages/setting/SettingPage'
 import AttendanceReportPage from './pages/report/AttendanceReportPage'
 import ShiftReportPage from './pages/report/ShiftReportPage'
 import TrendReportPage from './pages/report/TrendReportPage'
+import OutletPage from './pages/outlet/OutletPage'
 
 const PrivateRoute = ({ children }) => {
   const { token, loading } = useAuth()
@@ -58,6 +59,7 @@ function AppRoutes() {
       <Route path="/reports/attendance" element={<PrivateRoute><AttendanceReportPage /></PrivateRoute>} />
       <Route path="/reports/shift" element={<PrivateRoute><ShiftReportPage /></PrivateRoute>} />
       <Route path="/reports/trend" element={<PrivateRoute><TrendReportPage /></PrivateRoute>} />
+      <Route path="/outlets" element={<PrivateRoute><OutletPage /></PrivateRoute>} />
       <Route path="/" element={<Navigate to="/dashboard" />} />
     </Routes>
   )

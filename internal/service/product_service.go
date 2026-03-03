@@ -8,13 +8,18 @@ import (
 )
 
 type ProductRequest struct {
-	Name       string  `json:"name"`
-	CategoryID *uint   `json:"category_id"`
-	BrandID    *uint   `json:"brand_id"`
-	UnitID     *uint   `json:"unit_id"`
-	Price      float64 `json:"price"`
-	Status     string  `json:"status"`
-	VariantIDs []uint  `json:"variant_ids"`
+	Code        string  `json:"code"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	CategoryID  *uint   `json:"category_id"`
+	BrandID     *uint   `json:"brand_id"`
+	UnitID      *uint   `json:"unit_id"`
+	Price       float64 `json:"price"`
+	ExtraPrice  float64 `json:"extra_price"`
+	Image       string  `json:"image"`
+	Status      string  `json:"status"`
+	VariantIDs  []uint  `json:"variant_ids"`
+	OutletIDs   []uint  `json:"outlet_ids"`
 }
 
 func GetAllProducts(search string) ([]model.Product, error) {
@@ -30,27 +35,26 @@ func GetProductByID(id uint) (*model.Product, error) {
 }
 
 func CreateProduct(req ProductRequest) (*model.Product, error) {
-	status := req.Status
-	if status == "" {
-		status = "active"
+	if req.Status == "" {
+		req.Status = "active"
 	}
-
 	product := model.Product{
-		Name:       req.Name,
-		CategoryID: req.CategoryID,
-		BrandID:    req.BrandID,
-		UnitID:     req.UnitID,
-		Price:      req.Price,
-		Status:     status,
+		Code:        req.Code,
+		Name:        req.Name,
+		Description: req.Description,
+		CategoryID:  req.CategoryID,
+		BrandID:     req.BrandID,
+		UnitID:      req.UnitID,
+		Price:       req.Price,
+		ExtraPrice:  req.ExtraPrice,
+		Image:       req.Image,
+		Status:      req.Status,
 	}
-
-	err := repository.CreateProduct(&product, req.VariantIDs)
+	err := repository.CreateProduct(&product, req.VariantIDs, req.OutletIDs)
 	if err != nil {
 		return nil, err
 	}
-
-	result, err := repository.GetProductByID(product.ID)
-	return result, err
+	return repository.GetProductByID(product.ID)
 }
 
 func UpdateProduct(id uint, req ProductRequest) (*model.Product, error) {
@@ -58,23 +62,25 @@ func UpdateProduct(id uint, req ProductRequest) (*model.Product, error) {
 	if err != nil {
 		return nil, errors.New("Produk tidak ditemukan")
 	}
-
+	product.Code = req.Code
 	product.Name = req.Name
+	product.Description = req.Description
 	product.CategoryID = req.CategoryID
 	product.BrandID = req.BrandID
 	product.UnitID = req.UnitID
 	product.Price = req.Price
+	product.ExtraPrice = req.ExtraPrice
+	if req.Image != "" {
+		product.Image = req.Image
+	}
 	if req.Status != "" {
 		product.Status = req.Status
 	}
-
-	err = repository.UpdateProduct(product, req.VariantIDs)
+	err = repository.UpdateProduct(product, req.VariantIDs, req.OutletIDs)
 	if err != nil {
 		return nil, err
 	}
-
-	result, err := repository.GetProductByID(product.ID)
-	return result, err
+	return repository.GetProductByID(product.ID)
 }
 
 func DeleteProduct(id uint) error {

@@ -114,6 +114,13 @@ func SetupRouter() *gin.Engine {
 			// Setting
 			protected.GET("/settings", handler.GetSetting)
 			protected.PUT("/settings", handler.UpdateSetting)
+
+			// Outlet
+			protected.GET("/outlets", handler.GetAllOutlets)
+			protected.GET("/outlets/:id", handler.GetOutletByID)
+			protected.POST("/outlets", handler.CreateOutlet)
+			protected.PUT("/outlets/:id", handler.UpdateOutlet)
+			protected.DELETE("/outlets/:id", handler.DeleteOutlet)
 		}
 	}
 

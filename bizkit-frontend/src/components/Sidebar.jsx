@@ -19,6 +19,7 @@ const menus = [
       { label: 'Merek', path: '/brands' },
       { label: 'Satuan', path: '/units' },
       { label: 'Varian', path: '/variants' },
+      { label: 'Outlet', path: '/outlets' },
     ],
   },
   {

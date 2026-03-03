@@ -44,6 +44,7 @@ func ConnectDB() {
 		&model.Attendance{},
 		&model.Shift{},
 		&model.Setting{},
+		&model.Outlet{},
 	)
 
 	DB = db
