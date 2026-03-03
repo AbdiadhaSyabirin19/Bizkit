@@ -34,8 +34,8 @@ export default function UserPage() {
   }
 
   const filtered = data.filter(d =>
-    d.Name?.toLowerCase().includes(search.toLowerCase()) ||
-    d.Username?.toLowerCase().includes(search.toLowerCase())
+    d.name?.toLowerCase().includes(search.toLowerCase()) ||
+    d.username?.toLowerCase().includes(search.toLowerCase())
   )
 
   const openAdd = () => {
@@ -44,7 +44,7 @@ export default function UserPage() {
   }
 
   const openEdit = (item) => {
-    setForm({ name: item.Name, username: item.Username, password: '', role_id: item.RoleID || '' })
+    setForm({ name: item.name, username: item.username, password: '', role_id: item.role_id || '' })
     setModal({ open: true, mode: 'edit', item })
   }
 
@@ -79,11 +79,11 @@ export default function UserPage() {
 
   const columns = [
     { key: 'no', label: 'No', render: (row) => filtered.indexOf(row) + 1 },
-    { key: 'Name', label: 'Nama' },
-    { key: 'Username', label: 'Username' },
+    { key: 'name', label: 'Nama' },
+    { key: 'username', label: 'Username' },
     { key: 'role', label: 'Role', render: (row) => (
       <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-        {row.role?.Name || '-'}
+        {row.role?.name || '-'}
       </span>
     )},
     {

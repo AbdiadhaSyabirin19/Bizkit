@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"bizkit-backend/config"
 	"bizkit-backend/internal/model"
@@ -47,13 +48,16 @@ func main() {
 		{"Andi Supervisor", "andi", 3},
 	}
 	for _, u := range users {
-		user := model.User{
-			Name:     u.Name,
-			Username: u.Username,
-			Password: hashedStr,
-			RoleID:   &roles[u.RoleIdx].ID,
+		var existing model.User
+		if config.DB.Where("username = ?", u.Username).First(&existing).Error != nil {
+			user := model.User{
+				Name:     u.Name,
+				Username: u.Username,
+				Password: hashedStr,
+				RoleID:   &roles[u.RoleIdx].ID,
+			}
+			config.DB.Create(&user)
 		}
-		config.DB.FirstOrCreate(&user, model.User{Username: u.Username})
 	}
 	fmt.Println("✅ Users selesai")
 
@@ -103,56 +107,67 @@ func main() {
 	// ==================
 	// VARIANT CATEGORIES
 	// ==================
-	variantLevelPedas := model.VariantCategory{
-		Name:      "Level Pedas",
-		MinSelect: 1,
-		MaxSelect: 1,
-		Status:    "active",
-		Options: []model.VariantOption{
-			{Name: "Level 1", AdditionalPrice: 0},
-			{Name: "Level 3", AdditionalPrice: 0},
-			{Name: "Level 5", AdditionalPrice: 2000},
-		},
+	type OptionSeed struct {
+		Name            string
+		AdditionalPrice float64
 	}
-	variantTopping := model.VariantCategory{
-		Name:      "Topping",
-		MinSelect: 0,
-		MaxSelect: 3,
-		Status:    "active",
-		Options: []model.VariantOption{
-			{Name: "Keju", AdditionalPrice: 3000},
-			{Name: "Telur", AdditionalPrice: 2000},
-			{Name: "Sosis", AdditionalPrice: 4000},
-		},
+	type VariantSeed struct {
+		Name      string
+		MinSelect int
+		MaxSelect int
+		Options   []OptionSeed
 	}
-	variantSuhu := model.VariantCategory{
-		Name:      "Suhu Minuman",
-		MinSelect: 1,
-		MaxSelect: 1,
-		Status:    "active",
-		Options: []model.VariantOption{
-			{Name: "Panas", AdditionalPrice: 0},
-			{Name: "Dingin", AdditionalPrice: 1000},
+
+	variantSeeds := []VariantSeed{
+		{
+			Name: "Level Pedas", MinSelect: 1, MaxSelect: 1,
+			Options: []OptionSeed{
+				{"Level 1", 0}, {"Level 3", 0}, {"Level 5", 2000},
+			},
 		},
-	}
-	variantUkuran := model.VariantCategory{
-		Name:      "Ukuran",
-		MinSelect: 1,
-		MaxSelect: 1,
-		Status:    "active",
-		Options: []model.VariantOption{
-			{Name: "Regular", AdditionalPrice: 0},
-			{Name: "Large", AdditionalPrice: 5000},
+		{
+			Name: "Topping", MinSelect: 0, MaxSelect: 3,
+			Options: []OptionSeed{
+				{"Keju", 3000}, {"Telur", 2000}, {"Sosis", 4000},
+			},
+		},
+		{
+			Name: "Suhu Minuman", MinSelect: 1, MaxSelect: 1,
+			Options: []OptionSeed{
+				{"Panas", 0}, {"Dingin", 1000},
+			},
+		},
+		{
+			Name: "Ukuran", MinSelect: 1, MaxSelect: 1,
+			Options: []OptionSeed{
+				{"Regular", 0}, {"Large", 5000},
+			},
 		},
 	}
 
-	variants := []*model.VariantCategory{&variantLevelPedas, &variantTopping, &variantSuhu, &variantUkuran}
-	for _, v := range variants {
-		existing := model.VariantCategory{}
-		if config.DB.Where("name = ?", v.Name).First(&existing).Error != nil {
-			config.DB.Create(v)
+	variantMap := map[string]model.VariantCategory{}
+	for _, vs := range variantSeeds {
+		var existing model.VariantCategory
+		err := config.DB.Where("name = ?", vs.Name).First(&existing).Error
+		if err != nil {
+			var options []model.VariantOption
+			for _, o := range vs.Options {
+				options = append(options, model.VariantOption{
+					Name:            o.Name,
+					AdditionalPrice: o.AdditionalPrice,
+				})
+			}
+			newVariant := model.VariantCategory{
+				Name:      vs.Name,
+				MinSelect: vs.MinSelect,
+				MaxSelect: vs.MaxSelect,
+				Status:    "active",
+				Options:   options,
+			}
+			config.DB.Create(&newVariant)
+			variantMap[vs.Name] = newVariant
 		} else {
-			*v = existing
+			variantMap[vs.Name] = existing
 		}
 	}
 	fmt.Println("✅ Variants selesai")
@@ -160,45 +175,55 @@ func main() {
 	// ==================
 	// PRODUCTS
 	// ==================
-	products := []struct {
-		Name       string
-		CatIdx     int
-		BrandIdx   int
-		UnitIdx    int
-		Price      float64
-		VariantIDs []uint
-	}{
-		{"Ayam Geprek", 0, 0, 1, 15000, []uint{variantLevelPedas.ID, variantTopping.ID}},
-		{"Nasi Goreng", 0, 0, 1, 18000, []uint{variantLevelPedas.ID}},
-		{"Mie Goreng", 0, 1, 1, 12000, []uint{variantLevelPedas.ID}},
-		{"Soto Ayam", 0, 0, 1, 16000, []uint{}},
-		{"Es Teh Manis", 1, 0, 2, 5000, []uint{variantUkuran.ID}},
-		{"Kopi Susu", 1, 0, 2, 12000, []uint{variantSuhu.ID, variantUkuran.ID}},
-		{"Jus Alpukat", 1, 0, 2, 15000, []uint{variantUkuran.ID}},
-		{"Es Jeruk", 1, 0, 2, 8000, []uint{variantUkuran.ID}},
-		{"Keripik Singkong", 2, 3, 0, 8000, []uint{}},
-		{"Pisang Goreng", 2, 0, 0, 10000, []uint{variantTopping.ID}},
-		{"Es Krim", 3, 2, 0, 13000, []uint{variantTopping.ID}},
-		{"Pudding Coklat", 3, 0, 0, 11000, []uint{}},
+	type ProductSeed struct {
+		Name         string
+		CatIdx       int
+		BrandIdx     int
+		UnitIdx      int
+		Price        float64
+		VariantNames []string
+	}
+
+	productSeeds := []ProductSeed{
+		{"Ayam Geprek", 0, 0, 1, 15000, []string{"Level Pedas", "Topping"}},
+		{"Nasi Goreng", 0, 0, 1, 18000, []string{"Level Pedas"}},
+		{"Mie Goreng", 0, 1, 1, 12000, []string{"Level Pedas"}},
+		{"Soto Ayam", 0, 0, 1, 16000, []string{}},
+		{"Es Teh Manis", 1, 0, 2, 5000, []string{"Ukuran"}},
+		{"Kopi Susu", 1, 0, 2, 12000, []string{"Suhu Minuman", "Ukuran"}},
+		{"Jus Alpukat", 1, 0, 2, 15000, []string{"Ukuran"}},
+		{"Es Jeruk", 1, 0, 2, 8000, []string{"Ukuran"}},
+		{"Keripik Singkong", 2, 3, 0, 8000, []string{}},
+		{"Pisang Goreng", 2, 0, 0, 10000, []string{"Topping"}},
+		{"Es Krim", 3, 2, 0, 13000, []string{"Topping"}},
+		{"Pudding Coklat", 3, 0, 0, 11000, []string{}},
 	}
 
 	var createdProducts []model.Product
-	for _, p := range products {
-		product := model.Product{
-			Name:       p.Name,
-			CategoryID: &categories[p.CatIdx].ID,
-			BrandID:    &brands[p.BrandIdx].ID,
-			UnitID:     &units[p.UnitIdx].ID,
-			Price:      p.Price,
-			Status:     "active",
-		}
-		existing := model.Product{}
-		if config.DB.Where("name = ?", product.Name).First(&existing).Error != nil {
+	for _, p := range productSeeds {
+		var existing model.Product
+		err := config.DB.Where("name = ?", p.Name).First(&existing).Error
+		if err != nil {
+			product := model.Product{
+				Name:       p.Name,
+				CategoryID: &categories[p.CatIdx].ID,
+				BrandID:    &brands[p.BrandIdx].ID,
+				UnitID:     &units[p.UnitIdx].ID,
+				Price:      p.Price,
+				Status:     "active",
+			}
 			config.DB.Create(&product)
-			if len(p.VariantIDs) > 0 {
+
+			if len(p.VariantNames) > 0 {
 				var variantObjs []model.VariantCategory
-				config.DB.Find(&variantObjs, p.VariantIDs)
-				config.DB.Model(&product).Association("Variants").Replace(variantObjs)
+				for _, vname := range p.VariantNames {
+					if v, ok := variantMap[vname]; ok {
+						variantObjs = append(variantObjs, v)
+					}
+				}
+				if len(variantObjs) > 0 {
+					config.DB.Model(&product).Association("Variants").Replace(variantObjs)
+				}
 			}
 			createdProducts = append(createdProducts, product)
 		} else {
@@ -223,7 +248,7 @@ func main() {
 	// ==================
 	// PROMOS
 	// ==================
-	promos := []struct {
+	type PromoSeed struct {
 		Name           string
 		Code           string
 		Type           string
@@ -232,82 +257,114 @@ func main() {
 		UsageLimit     int
 		UsageRemaining int
 		Status         string
-	}{
-		{"Diskon 10%", "DISC10", "percentage", 10, 50000, 100, 100, "active"},
-		{"Hemat 5 Ribu", "HEMAT5K", "fixed", 5000, 30000, 50, 50, "active"},
-		{"Promo Lebaran", "LEBARAN20", "percentage", 20, 100000, 30, 30, "upcoming"},
-		{"Flash Sale", "FLASH15", "percentage", 15, 0, 20, 0, "finished"},
+		StartDate      time.Time
+		EndDate        time.Time
 	}
-	for _, p := range promos {
-		promo := model.Promo{
-			Name:           p.Name,
-			Code:           p.Code,
-			Type:           p.Type,
-			Value:          p.Value,
-			MinPurchase:    p.MinPurchase,
-			UsageLimit:     p.UsageLimit,
-			UsageRemaining: p.UsageRemaining,
-			Status:         p.Status,
+
+	promoSeeds := []PromoSeed{
+		{
+			Name: "Diskon 10%", Code: "DISC10", Type: "percentage", Value: 10,
+			MinPurchase: 50000, UsageLimit: 100, UsageRemaining: 100, Status: "active",
+			StartDate: time.Date(2026, 3, 1, 0, 0, 0, 0, time.Local),
+			EndDate:   time.Date(2026, 3, 31, 23, 59, 59, 0, time.Local),
+		},
+		{
+			Name: "Hemat 5 Ribu", Code: "HEMAT5K", Type: "fixed", Value: 5000,
+			MinPurchase: 30000, UsageLimit: 50, UsageRemaining: 50, Status: "active",
+			StartDate: time.Date(2026, 3, 1, 0, 0, 0, 0, time.Local),
+			EndDate:   time.Date(2026, 3, 31, 23, 59, 59, 0, time.Local),
+		},
+		{
+			Name: "Promo Lebaran", Code: "LEBARAN20", Type: "percentage", Value: 20,
+			MinPurchase: 100000, UsageLimit: 30, UsageRemaining: 30, Status: "upcoming",
+			StartDate: time.Date(2026, 4, 1, 0, 0, 0, 0, time.Local),
+			EndDate:   time.Date(2026, 4, 10, 23, 59, 59, 0, time.Local),
+		},
+		{
+			Name: "Flash Sale", Code: "FLASH15", Type: "percentage", Value: 15,
+			MinPurchase: 0, UsageLimit: 20, UsageRemaining: 0, Status: "finished",
+			StartDate: time.Date(2026, 2, 1, 0, 0, 0, 0, time.Local),
+			EndDate:   time.Date(2026, 2, 28, 23, 59, 59, 0, time.Local),
+		},
+	}
+
+	for _, p := range promoSeeds {
+		var existing model.Promo
+		if config.DB.Where("code = ?", p.Code).First(&existing).Error != nil {
+			promo := model.Promo{
+				Name:           p.Name,
+				Code:           p.Code,
+				Type:           p.Type,
+				Value:          p.Value,
+				StartDate:      p.StartDate,
+				EndDate:        p.EndDate,
+				MinPurchase:    p.MinPurchase,
+				UsageLimit:     p.UsageLimit,
+				UsageRemaining: p.UsageRemaining,
+				Status:         p.Status,
+			}
+			config.DB.Create(&promo)
 		}
-		config.DB.FirstOrCreate(&promo, model.Promo{Code: p.Code})
 	}
 	fmt.Println("✅ Promos selesai")
 
 	// ==================
 	// SALES (Sample Transaksi)
 	// ==================
-	// Ambil user kasir
 	var kasir model.User
 	config.DB.Where("username = ?", "budi").First(&kasir)
 
+	type ItemSeed struct {
+		ProductIdx int
+		Qty        int
+	}
+
 	sampleSales := []struct {
 		PaymentIdx int
-		Items      []struct {
-			ProductIdx int
-			Qty        int
-		}
+		Items      []ItemSeed
 	}{
-		{0, []struct{ ProductIdx, Qty int }{{0, 2}, {4, 1}}},
-		{1, []struct{ ProductIdx, Qty int }{{1, 1}, {5, 2}}},
-		{0, []struct{ ProductIdx, Qty int }{{2, 3}, {6, 1}}},
-		{2, []struct{ ProductIdx, Qty int }{{3, 1}, {7, 2}, {8, 1}}},
-		{1, []struct{ ProductIdx, Qty int }{{4, 4}, {9, 2}}},
-		{0, []struct{ ProductIdx, Qty int }{{0, 1}, {5, 1}, {10, 1}}},
-		{1, []struct{ ProductIdx, Qty int }{{1, 2}, {11, 3}}},
-		{0, []struct{ ProductIdx, Qty int }{{6, 2}, {7, 1}}},
+		{0, []ItemSeed{{0, 2}, {4, 1}}},
+		{1, []ItemSeed{{1, 1}, {5, 2}}},
+		{0, []ItemSeed{{2, 3}, {6, 1}}},
+		{2, []ItemSeed{{3, 1}, {7, 2}, {8, 1}}},
+		{1, []ItemSeed{{4, 4}, {9, 2}}},
+		{0, []ItemSeed{{0, 1}, {5, 1}, {10, 1}}},
+		{1, []ItemSeed{{1, 2}, {11, 3}}},
+		{0, []ItemSeed{{6, 2}, {7, 1}}},
 	}
 
 	for i, s := range sampleSales {
-		var saleItems []model.SaleItem
-		var subtotal float64
+		invoiceNumber := fmt.Sprintf("INV-20260302-%04d", i+1)
 
-		for _, item := range s.Items {
-			if item.ProductIdx >= len(createdProducts) {
-				continue
+		var existing model.Sale
+		if config.DB.Where("invoice_number = ?", invoiceNumber).First(&existing).Error != nil {
+			var saleItems []model.SaleItem
+			var subtotal float64
+
+			for _, item := range s.Items {
+				if item.ProductIdx >= len(createdProducts) {
+					continue
+				}
+				p := createdProducts[item.ProductIdx]
+				itemSubtotal := p.Price * float64(item.Qty)
+				subtotal += itemSubtotal
+				saleItems = append(saleItems, model.SaleItem{
+					ProductID: p.ID,
+					Quantity:  item.Qty,
+					BasePrice: p.Price,
+					Subtotal:  itemSubtotal,
+				})
 			}
-			p := createdProducts[item.ProductIdx]
-			itemSubtotal := p.Price * float64(item.Qty)
-			subtotal += itemSubtotal
-			saleItems = append(saleItems, model.SaleItem{
-				ProductID: p.ID,
-				Quantity:  item.Qty,
-				BasePrice: p.Price,
-				Subtotal:  itemSubtotal,
-			})
-		}
 
-		sale := model.Sale{
-			InvoiceNumber:   fmt.Sprintf("INV-20260302-%04d", i+1),
-			UserID:          kasir.ID,
-			PaymentMethodID: payments[s.PaymentIdx].ID,
-			Subtotal:        subtotal,
-			DiscountTotal:   0,
-			GrandTotal:      subtotal,
-			Items:           saleItems,
-		}
-
-		existing := model.Sale{}
-		if config.DB.Where("invoice_number = ?", sale.InvoiceNumber).First(&existing).Error != nil {
+			sale := model.Sale{
+				InvoiceNumber:   invoiceNumber,
+				UserID:          kasir.ID,
+				PaymentMethodID: payments[s.PaymentIdx].ID,
+				Subtotal:        subtotal,
+				DiscountTotal:   0,
+				GrandTotal:      subtotal,
+				Items:           saleItems,
+			}
 			config.DB.Create(&sale)
 		}
 	}

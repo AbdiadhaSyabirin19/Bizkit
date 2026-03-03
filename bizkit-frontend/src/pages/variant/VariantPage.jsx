@@ -28,8 +28,9 @@ export default function VariantPage() {
     finally { setLoading(false) }
   }
 
-  const filtered = data.filter(d => d.Name?.toLowerCase().includes(search.toLowerCase()))
-
+  const filtered = data.filter(d =>
+    d.name?.toLowerCase().includes(search.toLowerCase())
+  )
   const resetForm = () => setForm({
     name: '', min_select: 1, max_select: 1, status: 'active',
     options: [{ name: '', additional_price: 0 }]
@@ -39,12 +40,12 @@ export default function VariantPage() {
 
   const openEdit = (item) => {
     setForm({
-      name: item.Name,
-      min_select: item.MinSelect,
-      max_select: item.MaxSelect,
-      status: item.Status,
+      name: item.name,
+      min_select: item.min_select,
+      max_select: item.max_select,
+      status: item.status,
       options: item.options?.length > 0
-        ? item.options.map(o => ({ name: o.Name, additional_price: o.AdditionalPrice }))
+        ? item.options.map(o => ({ name: o.name, additional_price: o.additional_price }))
         : [{ name: '', additional_price: 0 }]
     })
     setModal({ open: true, mode: 'edit', item })
@@ -89,25 +90,25 @@ export default function VariantPage() {
 
   const columns = [
     { key: 'no', label: 'No', render: (row) => filtered.indexOf(row) + 1 },
-    { key: 'Name', label: 'Nama Varian' },
-    { key: 'MinSelect', label: 'Min' },
-    { key: 'MaxSelect', label: 'Maks' },
+    { key: 'name', label: 'Nama Varian' },
+    { key: 'min_select', label: 'Min' },
+    { key: 'max_select', label: 'Maks' },
     {
       key: 'options', label: 'Opsi',
       render: (row) => (
         <div className="flex flex-wrap gap-1">
           {row.options?.slice(0, 3).map((o, i) => (
-            <span key={i} className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">{o.Name}</span>
+            <span key={i} className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">{o.name}</span>
           ))}
           {row.options?.length > 3 && <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">+{row.options.length - 3}</span>}
         </div>
       )
     },
     {
-      key: 'Status', label: 'Status',
+      key: 'status', label: 'Status',
       render: (row) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${row.Status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-          {row.Status === 'active' ? 'Aktif' : 'Nonaktif'}
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${row.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+          {row.status === 'active' ? 'Aktif' : 'Nonaktif'}
         </span>
       )
     },

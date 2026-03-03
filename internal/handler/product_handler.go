@@ -36,12 +36,13 @@ func GetProductByID(c *gin.Context) {
 func CreateProduct(c *gin.Context) {
 	var req service.ProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Input tidak valid"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Input tidak valid", "error": err.Error()})
 		return
 	}
+
 	product, err := service.CreateProduct(req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Gagal membuat produk"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"message": "Produk berhasil dibuat", "data": product})
@@ -55,7 +56,7 @@ func UpdateProduct(c *gin.Context) {
 	}
 	var req service.ProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Input tidak valid"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Input tidak valid", "error": err.Error()})
 		return
 	}
 	product, err := service.UpdateProduct(uint(id), req)

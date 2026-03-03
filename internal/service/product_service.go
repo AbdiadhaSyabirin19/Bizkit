@@ -8,7 +8,7 @@ import (
 )
 
 type ProductRequest struct {
-	Name       string  `json:"name" binding:"required"`
+	Name       string  `json:"name"`
 	CategoryID *uint   `json:"category_id"`
 	BrandID    *uint   `json:"brand_id"`
 	UnitID     *uint   `json:"unit_id"`

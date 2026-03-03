@@ -29,7 +29,7 @@ export default function CategoryPage() {
   }
 
   const filtered = data.filter(d =>
-    d.Name?.toLowerCase().includes(search.toLowerCase())
+    d.name?.toLowerCase().includes(search.toLowerCase())
   )
 
   const openAdd = () => {
@@ -38,7 +38,7 @@ export default function CategoryPage() {
   }
 
   const openEdit = (item) => {
-    setForm({ name: item.Name })
+    setForm({ name: item.name })
     setModal({ open: true, mode: 'edit', item })
   }
 
@@ -72,24 +72,14 @@ export default function CategoryPage() {
   }
 
   const columns = [
-    { key: 'no', label: 'No', render: (_, idx) => idx + 1 },
-    { key: 'Name', label: 'Kategori' },
+    { key: 'no', label: 'No', render: (row) => filtered.indexOf(row) + 1 },
+    { key: 'name', label: 'Kategori' },
     {
       key: 'aksi', label: 'Aksi',
       render: (row) => (
         <div className="flex gap-2">
-          <button
-            onClick={() => openEdit(row)}
-            className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs transition"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => setConfirm({ open: true, id: row.ID })}
-            className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs transition"
-          >
-            Hapus
-          </button>
+          <button onClick={() => openEdit(row)} className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs transition">Edit</button>
+          <button onClick={() => setConfirm({ open: true, id: row.ID })} className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs transition">Hapus</button>
         </div>
       )
     },
