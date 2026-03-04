@@ -8,21 +8,42 @@ import (
 	"bizkit-backend/internal/repository"
 )
 
-type PromoRequest struct {
-	Name           string    `json:"name" binding:"required"`
-	Code           string    `json:"code"`
-	Type           string    `json:"type" binding:"required"`
-	Value          float64   `json:"value" binding:"required"`
-	StartDate      time.Time `json:"start_date" binding:"required"`
-	EndDate        time.Time `json:"end_date" binding:"required"`
-	MinPurchase    float64   `json:"min_purchase"`
-	UsageLimit     int       `json:"usage_limit"`
-	ProductIDs     []uint    `json:"product_ids"`
-	CategoryIDs    []uint    `json:"category_ids"`
+type PromoItemRequest struct {
+	RefType string `json:"ref_type"`
+	RefID   uint   `json:"ref_id"`
+	RefName string `json:"ref_name"`
 }
 
-func GetAllPromos(status string) ([]model.Promo, error) {
-	return repository.GetAllPromos(status)
+type PromoSpecialPriceRequest struct {
+	ProductID uint    `json:"product_id"`
+	BuyPrice  float64 `json:"buy_price"`
+}
+
+type PromoRequest struct {
+	Name          string                     `json:"name"`
+	PromoType     string                     `json:"promo_type"`
+	AppliesTo     string                     `json:"applies_to"`
+	Condition     string                     `json:"condition"`
+	MinQty        int                        `json:"min_qty"`
+	MinTotal      float64                    `json:"min_total"`
+	DiscountPct   float64                    `json:"discount_pct"`
+	MaxDiscount   float64                    `json:"max_discount"`
+	CutPrice      float64                    `json:"cut_price"`
+	ActiveDays    string                     `json:"active_days"`
+	StartTime     string                     `json:"start_time"`
+	EndTime       string                     `json:"end_time"`
+	StartDate     string                     `json:"start_date"`
+	EndDate       string                     `json:"end_date"`
+	VoucherType   string                     `json:"voucher_type"`
+	VoucherCode   string                     `json:"voucher_code"`
+	MaxUsage      int                        `json:"max_usage"`
+	Status        string                     `json:"status"`
+	Items         []PromoItemRequest         `json:"items"`
+	SpecialPrices []PromoSpecialPriceRequest `json:"special_prices"`
+}
+
+func GetAllPromos(search string) ([]model.Promo, error) {
+	return repository.GetAllPromos(search)
 }
 
 func GetPromoByID(id uint) (*model.Promo, error) {
@@ -34,35 +55,68 @@ func GetPromoByID(id uint) (*model.Promo, error) {
 }
 
 func CreatePromo(req PromoRequest) (*model.Promo, error) {
-	// Tentukan status otomatis berdasarkan tanggal
-	now := time.Now()
-	status := "active"
-	if req.StartDate.After(now) {
-		status = "upcoming"
-	} else if req.EndDate.Before(now) {
-		status = "finished"
+	startDate, _ := time.Parse("2006-01-02", req.StartDate)
+	endDate, _ := time.Parse("2006-01-02", req.EndDate)
+
+	if req.Status == "" {
+		req.Status = "active"
 	}
 
 	promo := model.Promo{
-		Name:           req.Name,
-		Code:           req.Code,
-		Type:           req.Type,
-		Value:          req.Value,
-		StartDate:      req.StartDate,
-		EndDate:        req.EndDate,
-		MinPurchase:    req.MinPurchase,
-		UsageLimit:     req.UsageLimit,
-		UsageRemaining: req.UsageLimit,
-		Status:         status,
+		Name:        req.Name,
+		PromoType:   req.PromoType,
+		AppliesTo:   req.AppliesTo,
+		Condition:   req.Condition,
+		MinQty:      req.MinQty,
+		MinTotal:    req.MinTotal,
+		DiscountPct: req.DiscountPct,
+		MaxDiscount: req.MaxDiscount,
+		CutPrice:    req.CutPrice,
+		ActiveDays:  req.ActiveDays,
+		StartTime:   req.StartTime,
+		EndTime:     req.EndTime,
+		StartDate:   startDate,
+		EndDate:     endDate,
+		VoucherType: req.VoucherType,
+		VoucherCode: req.VoucherCode,
+		MaxUsage:    req.MaxUsage,
+		Status:      req.Status,
 	}
 
-	err := repository.CreatePromo(&promo, req.ProductIDs, req.CategoryIDs)
+	var items []model.PromoItem
+	for _, it := range req.Items {
+		items = append(items, model.PromoItem{
+			RefType: it.RefType,
+			RefID:   it.RefID,
+			RefName: it.RefName,
+		})
+	}
+
+	var specialPrices []model.PromoSpecialPrice
+	for _, sp := range req.SpecialPrices {
+		specialPrices = append(specialPrices, model.PromoSpecialPrice{
+			ProductID: sp.ProductID,
+			BuyPrice:  sp.BuyPrice,
+		})
+	}
+
+	// Generate vouchers
+	var vouchers []model.PromoVoucher
+	if req.VoucherType == "custom" && req.VoucherCode != "" {
+		vouchers = append(vouchers, model.PromoVoucher{Code: req.VoucherCode})
+	}
+
+	err := repository.CreatePromo(&promo, items, specialPrices, vouchers)
 	if err != nil {
 		return nil, err
 	}
 
-	result, _ := repository.GetPromoByID(promo.ID)
-	return result, nil
+	// Generate vouchers jika tipe generate
+	if req.VoucherType == "generate" && req.MaxUsage > 0 {
+		repository.GenerateVoucherCodes(promo.ID, req.MaxUsage)
+	}
+
+	return repository.GetPromoByID(promo.ID)
 }
 
 func UpdatePromo(id uint, req PromoRequest) (*model.Promo, error) {
@@ -71,31 +125,52 @@ func UpdatePromo(id uint, req PromoRequest) (*model.Promo, error) {
 		return nil, errors.New("Promo tidak ditemukan")
 	}
 
-	now := time.Now()
-	status := "active"
-	if req.StartDate.After(now) {
-		status = "upcoming"
-	} else if req.EndDate.Before(now) {
-		status = "finished"
-	}
+	startDate, _ := time.Parse("2006-01-02", req.StartDate)
+	endDate, _ := time.Parse("2006-01-02", req.EndDate)
 
 	promo.Name = req.Name
-	promo.Code = req.Code
-	promo.Type = req.Type
-	promo.Value = req.Value
-	promo.StartDate = req.StartDate
-	promo.EndDate = req.EndDate
-	promo.MinPurchase = req.MinPurchase
-	promo.UsageLimit = req.UsageLimit
-	promo.Status = status
+	promo.PromoType = req.PromoType
+	promo.AppliesTo = req.AppliesTo
+	promo.Condition = req.Condition
+	promo.MinQty = req.MinQty
+	promo.MinTotal = req.MinTotal
+	promo.DiscountPct = req.DiscountPct
+	promo.MaxDiscount = req.MaxDiscount
+	promo.CutPrice = req.CutPrice
+	promo.ActiveDays = req.ActiveDays
+	promo.StartTime = req.StartTime
+	promo.EndTime = req.EndTime
+	promo.StartDate = startDate
+	promo.EndDate = endDate
+	promo.VoucherType = req.VoucherType
+	promo.VoucherCode = req.VoucherCode
+	promo.MaxUsage = req.MaxUsage
+	if req.Status != "" {
+		promo.Status = req.Status
+	}
 
-	err = repository.UpdatePromo(promo, req.ProductIDs, req.CategoryIDs)
+	var items []model.PromoItem
+	for _, it := range req.Items {
+		items = append(items, model.PromoItem{
+			RefType: it.RefType,
+			RefID:   it.RefID,
+			RefName: it.RefName,
+		})
+	}
+
+	var specialPrices []model.PromoSpecialPrice
+	for _, sp := range req.SpecialPrices {
+		specialPrices = append(specialPrices, model.PromoSpecialPrice{
+			ProductID: sp.ProductID,
+			BuyPrice:  sp.BuyPrice,
+		})
+	}
+
+	err = repository.UpdatePromo(promo, items, specialPrices)
 	if err != nil {
 		return nil, err
 	}
-
-	result, _ := repository.GetPromoByID(promo.ID)
-	return result, nil
+	return repository.GetPromoByID(promo.ID)
 }
 
 func DeletePromo(id uint) error {
@@ -104,4 +179,8 @@ func DeletePromo(id uint) error {
 		return errors.New("Promo tidak ditemukan")
 	}
 	return repository.DeletePromo(id)
+}
+
+func GetPromosByProductID(productID uint, categoryID *uint, brandID *uint) ([]model.Promo, error) {
+	return repository.GetPromosByProductID(productID, categoryID, brandID)
 }

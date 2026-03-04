@@ -70,6 +70,7 @@ func SetupRouter() *gin.Engine {
 			protected.POST("/products", handler.CreateProduct)
 			protected.PUT("/products/:id", handler.UpdateProduct)
 			protected.DELETE("/products/:id", handler.DeleteProduct)
+			protected.GET("/products/:id/prices", handler.GetProductPrices)
 
 			// Role
 			protected.GET("/roles", handler.GetAllRoles)
@@ -98,6 +99,7 @@ func SetupRouter() *gin.Engine {
 			protected.POST("/promos", handler.CreatePromo)
 			protected.PUT("/promos/:id", handler.UpdatePromo)
 			protected.DELETE("/promos/:id", handler.DeletePromo)
+			protected.GET("/products/:id/promos", handler.GetPromosByProduct)
 
 			// Sales
 			protected.POST("/sales", handler.CreateSale)
@@ -121,6 +123,15 @@ func SetupRouter() *gin.Engine {
 			protected.POST("/outlets", handler.CreateOutlet)
 			protected.PUT("/outlets/:id", handler.UpdateOutlet)
 			protected.DELETE("/outlets/:id", handler.DeleteOutlet)
+
+			// Multi Harga
+			protected.GET("/price-categories", handler.GetAllPriceCategories)
+			protected.POST("/price-categories", handler.CreatePriceCategory)
+			protected.PUT("/price-categories/:id", handler.UpdatePriceCategory)
+			protected.DELETE("/price-categories/:id", handler.DeletePriceCategory)
+			protected.GET("/price-categories/:id/products", handler.GetProductPricesByCategory)
+			protected.POST("/price-categories/:id/products", handler.UpsertProductPrice)
+			protected.DELETE("/price-categories/:id/products/:product_id", handler.DeleteProductPrice)
 		}
 	}
 

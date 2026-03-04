@@ -45,6 +45,11 @@ func ConnectDB() {
 		&model.Shift{},
 		&model.Setting{},
 		&model.Outlet{},
+		&model.PriceCategory{},
+    	&model.ProductPrice{},
+		&model.PromoItem{},
+		&model.PromoSpecialPrice{},
+		&model.PromoVoucher{},
 	)
 
 	DB = db

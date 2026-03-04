@@ -8,6 +8,7 @@ const menus = [
     icon: '≡',
     children: [
       { label: 'Promo & Voucher', path: '/promos' },
+      { label: 'Outlet', path: '/outlets' },
     ],
   },
   {
@@ -19,7 +20,7 @@ const menus = [
       { label: 'Merek', path: '/brands' },
       { label: 'Satuan', path: '/units' },
       { label: 'Varian', path: '/variants' },
-      { label: 'Outlet', path: '/outlets' },
+      { label: 'Multi Harga', path: '/multi-harga' },
     ],
   },
   {

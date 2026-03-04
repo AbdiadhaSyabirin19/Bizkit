@@ -76,19 +76,27 @@ func CreateSale(req SaleRequest, userID uint) (*model.Sale, error) {
 	if req.PromoID != nil {
 		promo, err := repository.GetPromoByID(*req.PromoID)
 		if err == nil && promo.Status == "active" {
-			if subtotal >= promo.MinPurchase {
-				if promo.Type == "percentage" {
-					discountTotal = subtotal * (promo.Value / 100)
-				} else {
-					discountTotal = promo.Value
-				}
-
-				// Kurangi sisa promo
-				if promo.UsageRemaining > 0 {
-					promo.UsageRemaining--
-					repository.UpdatePromoUsage(promo)
-				}
+			// Cek max usage
+			if promo.MaxUsage > 0 && promo.UsedCount >= promo.MaxUsage {
+				return nil, errors.New("Promo sudah mencapai batas penggunaan")
 			}
+
+			// Hitung diskon berdasarkan tipe promo
+			switch promo.PromoType {
+			case "discount":
+				discountTotal = subtotal * (promo.DiscountPct / 100)
+				if promo.MaxDiscount > 0 && discountTotal > promo.MaxDiscount {
+					discountTotal = promo.MaxDiscount
+				}
+			case "cut_price":
+				discountTotal = promo.CutPrice
+			case "special_price":
+				// Special price ditangani di level item, bukan total
+				discountTotal = 0
+			}
+
+			// Update used count
+			repository.UpdatePromoUsage(promo.ID)
 		}
 	}
 

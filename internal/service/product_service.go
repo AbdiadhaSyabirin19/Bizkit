@@ -15,7 +15,6 @@ type ProductRequest struct {
 	BrandID     *uint   `json:"brand_id"`
 	UnitID      *uint   `json:"unit_id"`
 	Price       float64 `json:"price"`
-	ExtraPrice  float64 `json:"extra_price"`
 	Image       string  `json:"image"`
 	Status      string  `json:"status"`
 	VariantIDs  []uint  `json:"variant_ids"`
@@ -46,7 +45,6 @@ func CreateProduct(req ProductRequest) (*model.Product, error) {
 		BrandID:     req.BrandID,
 		UnitID:      req.UnitID,
 		Price:       req.Price,
-		ExtraPrice:  req.ExtraPrice,
 		Image:       req.Image,
 		Status:      req.Status,
 	}
@@ -69,7 +67,6 @@ func UpdateProduct(id uint, req ProductRequest) (*model.Product, error) {
 	product.BrandID = req.BrandID
 	product.UnitID = req.UnitID
 	product.Price = req.Price
-	product.ExtraPrice = req.ExtraPrice
 	if req.Image != "" {
 		product.Image = req.Image
 	}
@@ -89,4 +86,9 @@ func DeleteProduct(id uint) error {
 		return errors.New("Produk tidak ditemukan")
 	}
 	return repository.DeleteProduct(id)
+}
+
+// GetProductPrices — ambil harga per kategori untuk 1 produk
+func GetProductPrices(productID uint) ([]model.ProductPrice, error) {
+	return repository.GetProductPricesByProductID(productID)
 }

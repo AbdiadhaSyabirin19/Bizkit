@@ -9,6 +9,7 @@ import (
 
 type BrandRequest struct {
 	Name string `json:"name" binding:"required"`
+	Image string `json:"image"`
 }
 
 func GetAllBrands(search string) ([]model.Brand, error) {
@@ -24,7 +25,7 @@ func GetBrandByID(id uint) (*model.Brand, error) {
 }
 
 func CreateBrand(req BrandRequest) (*model.Brand, error) {
-	brand := model.Brand{Name: req.Name}
+	brand := model.Brand{Name: req.Name, Image: req.Image}
 	err := repository.CreateBrand(&brand)
 	return &brand, err
 }
@@ -35,6 +36,7 @@ func UpdateBrand(id uint, req BrandRequest) (*model.Brand, error) {
 		return nil, errors.New("Brand tidak ditemukan")
 	}
 	brand.Name = req.Name
+	brand.Image = req.Image
 	err = repository.UpdateBrand(brand)
 	return brand, err
 }

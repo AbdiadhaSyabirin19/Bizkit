@@ -11,7 +11,6 @@ type Product struct {
 	BrandID     *uint             `json:"brand_id"`
 	UnitID      *uint             `json:"unit_id"`
 	Price       float64           `json:"price"`
-	ExtraPrice  float64           `json:"extra_price"`
 	Image       string            `json:"image"`
 	Status      string            `json:"status"`
 	Category    *Category         `json:"category,omitempty" gorm:"foreignKey:CategoryID"`
@@ -19,4 +18,5 @@ type Product struct {
 	Unit        *Unit             `json:"unit,omitempty" gorm:"foreignKey:UnitID"`
 	Variants    []VariantCategory `json:"variants,omitempty" gorm:"many2many:product_variant_categories;"`
 	Outlets     []Outlet          `json:"outlets,omitempty" gorm:"many2many:product_outlets;"`
+	Prices      []ProductPrice    `json:"prices,omitempty" gorm:"foreignKey:ProductID"`
 }

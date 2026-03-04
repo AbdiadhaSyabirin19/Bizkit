@@ -71,7 +71,6 @@ func UpdateProduct(product *model.Product, variantIDs []uint, outletIDs []uint) 
 		return err
 	}
 
-	// Update variants
 	var variantObjs []model.VariantCategory
 	if len(variantIDs) > 0 {
 		tx.Find(&variantObjs, variantIDs)
@@ -81,7 +80,6 @@ func UpdateProduct(product *model.Product, variantIDs []uint, outletIDs []uint) 
 		return err
 	}
 
-	// Update outlets
 	var outletObjs []model.Outlet
 	if len(outletIDs) > 0 {
 		tx.Find(&outletObjs, outletIDs)

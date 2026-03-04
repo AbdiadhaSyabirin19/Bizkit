@@ -4,11 +4,12 @@ import "gorm.io/gorm"
 
 type VariantCategory struct {
 	gorm.Model
-	Name      string          `json:"name" gorm:"not null"`
-	MinSelect int             `json:"min_select" gorm:"default:0"`
-	MaxSelect int             `json:"max_select" gorm:"default:1"`
-	Status    string          `json:"status" gorm:"default:'active'"`
-	Options   []VariantOption `json:"options" gorm:"foreignKey:VariantCategoryID"`
+	Name        string          `json:"name" gorm:"not null"`
+	Description string          `json:"description"`
+	MinSelect   int             `json:"min_select" gorm:"default:0"`
+	MaxSelect   int             `json:"max_select" gorm:"default:1"`
+	Status      string          `json:"status" gorm:"default:'active'"`
+	Options     []VariantOption `json:"options" gorm:"foreignKey:VariantCategoryID"`
 }
 
 type VariantOption struct {
