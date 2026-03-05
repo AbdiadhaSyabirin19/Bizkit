@@ -8,13 +8,16 @@ import (
 )
 
 type ProductRequest struct {
-	Name       string  `json:"name"`
-	CategoryID *uint   `json:"category_id"`
-	BrandID    *uint   `json:"brand_id"`
-	UnitID     *uint   `json:"unit_id"`
-	Price      float64 `json:"price"`
-	Status     string  `json:"status"`
-	VariantIDs []uint  `json:"variant_ids"`
+	Name        string  `json:"name"`
+	Code        string  `json:"code"`
+	Description string  `json:"description"`
+	Image       string  `json:"image"`
+	CategoryID  *uint   `json:"category_id"`
+	BrandID     *uint   `json:"brand_id"`
+	UnitID      *uint   `json:"unit_id"`
+	Price       float64 `json:"price"`
+	Status      string  `json:"status"`
+	VariantIDs  []uint  `json:"variant_ids"`
 }
 
 func GetAllProducts(search string) ([]model.Product, error) {
@@ -36,12 +39,15 @@ func CreateProduct(req ProductRequest) (*model.Product, error) {
 	}
 
 	product := model.Product{
-		Name:       req.Name,
-		CategoryID: req.CategoryID,
-		BrandID:    req.BrandID,
-		UnitID:     req.UnitID,
-		Price:      req.Price,
-		Status:     status,
+		Name:        req.Name,
+		Code:        req.Code,
+		Description: req.Description,
+		Image:       req.Image,
+		CategoryID:  req.CategoryID,
+		BrandID:     req.BrandID,
+		UnitID:      req.UnitID,
+		Price:       req.Price,
+		Status:      status,
 	}
 
 	err := repository.CreateProduct(&product, req.VariantIDs)
@@ -60,6 +66,11 @@ func UpdateProduct(id uint, req ProductRequest) (*model.Product, error) {
 	}
 
 	product.Name = req.Name
+	product.Code = req.Code
+	product.Description = req.Description
+	if req.Image != "" {
+		product.Image = req.Image
+	}
 	product.CategoryID = req.CategoryID
 	product.BrandID = req.BrandID
 	product.UnitID = req.UnitID
