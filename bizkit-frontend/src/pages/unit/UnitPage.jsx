@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import Table from '../../components/Table'
 import Modal from '../../components/Modal'
@@ -6,6 +7,7 @@ import ConfirmDialog from '../../components/ConfirmDialog'
 import api from '../../api/axios'
 
 export default function UnitPage() {
+  const navigate = useNavigate()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -25,8 +27,9 @@ export default function UnitPage() {
     finally { setLoading(false) }
   }
 
-  const filtered = data.filter(d => d.Name?.toLowerCase().includes(search.toLowerCase()))
-
+  const filtered = data.filter(d =>
+    d.name?.toLowerCase().includes(search.toLowerCase())
+  )
   const handleSave = async () => {
     if (!form.name.trim()) return
     setSaving(true)
@@ -49,13 +52,29 @@ export default function UnitPage() {
 
   const columns = [
     { key: 'no', label: 'No', render: (row) => filtered.indexOf(row) + 1 },
-    { key: 'Name', label: 'Satuan' },
+    { key: 'name', label: 'Satuan' },
     {
       key: 'aksi', label: 'Aksi',
       render: (row) => (
-        <div className="flex gap-2">
-          <button onClick={() => { setForm({ name: row.Name }); setModal({ open: true, mode: 'edit', item: row }) }} className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs transition">Edit</button>
-          <button onClick={() => setConfirm({ open: true, id: row.ID })} className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs transition">Hapus</button>
+        <div className="flex gap-4">
+          <button
+            onClick={() => { setForm({ name: row.name }); setModal({ open: true, mode: 'edit', item: row }) }}
+            className="text-[#0284c7] hover:text-[#0369a1] transition"
+            title="Edit"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setConfirm({ open: true, id: row.ID })}
+            className="text-[#0284c7] hover:text-[#0369a1] transition"
+            title="Hapus"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )
     },
@@ -63,20 +82,25 @@ export default function UnitPage() {
 
   return (
     <Layout title="Satuan">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h1 className="text-xl font-bold text-gray-800">Satuan</h1>
-            <p className="text-gray-500 text-sm">Kelola data satuan produk</p>
+      <div className="w-full relative min-h-[calc(100vh-100px)]">
+
+        {/* Search Bar aligned to right */}
+        <div className="flex justify-end mb-4">
+          <div className="relative w-64 mr-2">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
+            />
           </div>
-          <button onClick={() => { setForm({ name: '' }); setModal({ open: true, mode: 'add' }) }} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-            Tambah
-          </button>
         </div>
-        <div className="mb-4">
-          <input type="text" placeholder="Cari satuan..." value={search} onChange={e => setSearch(e.target.value)} className="w-full max-w-xs px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-        </div>
+
         <Table columns={columns} data={filtered} loading={loading} />
         <Modal isOpen={modal.open} onClose={() => setModal({ open: false })} title={modal.mode === 'add' ? 'Tambah Satuan' : 'Edit Satuan'}>
           <div className="space-y-4">
@@ -91,6 +115,18 @@ export default function UnitPage() {
           </div>
         </Modal>
         <ConfirmDialog isOpen={confirm.open} onClose={() => setConfirm({ open: false })} onConfirm={handleDelete} />
+
+        {/* Floating Action Button (Tambah) */}
+        <button
+          onClick={() => navigate('/units/add')}
+          className="fixed bottom-8 right-8 w-14 h-14 bg-[#00A651] hover:bg-[#008f45] text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all z-40"
+          title="Tambah Satuan"
+        >
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+
       </div>
     </Layout>
   )

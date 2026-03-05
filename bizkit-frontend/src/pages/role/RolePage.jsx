@@ -25,8 +25,9 @@ export default function RolePage() {
     finally { setLoading(false) }
   }
 
-  const filtered = data.filter(d => d.Name?.toLowerCase().includes(search.toLowerCase()))
-
+  const filtered = data.filter(d =>
+    d.name?.toLowerCase().includes(search.toLowerCase())
+  )
   const handleSave = async () => {
     if (!form.name.trim()) return
     setSaving(true)
@@ -49,12 +50,12 @@ export default function RolePage() {
 
   const columns = [
     { key: 'no', label: 'No', render: (row) => filtered.indexOf(row) + 1 },
-    { key: 'Name', label: 'Role' },
+    { key: 'name', label: 'Role' },
     {
       key: 'aksi', label: 'Aksi',
       render: (row) => (
         <div className="flex gap-2">
-          <button onClick={() => { setForm({ name: row.Name }); setModal({ open: true, mode: 'edit', item: row }) }} className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs transition">Edit</button>
+          <button onClick={() => { setForm({ name: row.name }); setModal({ open: true, mode: 'edit', item: row }) }} className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs transition">Edit</button>
           <button onClick={() => setConfirm({ open: true, id: row.ID })} className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs transition">Hapus</button>
         </div>
       )

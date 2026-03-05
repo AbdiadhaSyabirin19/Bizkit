@@ -4,14 +4,17 @@ import "gorm.io/gorm"
 
 type Product struct {
 	gorm.Model
-	Name       string           `json:"name" gorm:"not null"`
-	CategoryID *uint            `json:"category_id"`
-	BrandID    *uint            `json:"brand_id"`
-	UnitID     *uint            `json:"unit_id"`
-	Price      float64          `json:"price" gorm:"default:0"`
-	Status     string           `json:"status" gorm:"default:'active'"`
-	Category   Category         `json:"category" gorm:"foreignKey:CategoryID"`
-	Brand      Brand            `json:"brand" gorm:"foreignKey:BrandID"`
-	Unit       Unit             `json:"unit" gorm:"foreignKey:UnitID"`
-	Variants   []VariantCategory `json:"variants" gorm:"many2many:product_variant_categories"`
+	Name        string            `json:"name"`
+	Code        string            `json:"code"`
+	Description string            `json:"description"`
+	Image       string            `json:"image"`
+	CategoryID  *uint             `json:"category_id"`
+	BrandID     *uint             `json:"brand_id"`
+	UnitID      *uint             `json:"unit_id"`
+	Price       float64           `json:"price"`
+	Status      string            `json:"status"`
+	Category    *Category         `json:"category,omitempty" gorm:"foreignKey:CategoryID"`
+	Brand       *Brand            `json:"brand,omitempty" gorm:"foreignKey:BrandID"`
+	Unit        *Unit             `json:"unit,omitempty" gorm:"foreignKey:UnitID"`
+	Variants    []VariantCategory `json:"variants,omitempty" gorm:"many2many:product_variant_categories;"`
 }

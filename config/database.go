@@ -33,6 +33,7 @@ func ConnectDB() {
 		&model.Category{},
 		&model.Brand{},
 		&model.Unit{},
+		&model.PriceCategory{},
 		&model.VariantCategory{},
 		&model.VariantOption{},
 		&model.Product{},

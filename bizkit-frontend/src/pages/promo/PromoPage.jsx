@@ -57,14 +57,14 @@ export default function PromoPage() {
 
   const openEdit = (item) => {
     setForm({
-      name: item.Name,
-      code: item.Code,
-      type: item.Type,
-      value: item.Value,
-      start_date: item.StartDate?.split('T')[0] || '',
-      end_date: item.EndDate?.split('T')[0] || '',
-      min_purchase: item.MinPurchase,
-      usage_limit: item.UsageLimit
+      name: item.name,
+      code: item.code,
+      type: item.type,
+      value: item.value,
+      start_date: item.start_date?.split('T')[0] || '',
+      end_date: item.end_date?.split('T')[0] || '',
+      min_purchase: item.min_purchase,
+      usage_limit: item.usage_limit
     })
     setModal({ open: true, mode: 'edit', item })
   }
@@ -100,16 +100,16 @@ export default function PromoPage() {
   }
 
   const columns = [
-    { key: 'Name', label: 'Nama Promo' },
-    { key: 'Code', label: 'Kode' },
-    { key: 'type', label: 'Jenis', render: (row) => row.Type === 'percentage' ? `${row.Value}%` : `Rp ${Number(row.Value).toLocaleString('id-ID')}` },
-    { key: 'date', label: 'Periode', render: (row) => `${row.StartDate?.split('T')[0]} s/d ${row.EndDate?.split('T')[0]}` },
-    { key: 'usage', label: 'Sisa', render: (row) => `${row.UsageRemaining}/${row.UsageLimit || '∞'}` },
+    { key: 'name', label: 'Nama Promo' },
+    { key: 'code', label: 'Kode' },
+    { key: 'type', label: 'Jenis', render: (row) => row.type === 'percentage' ? `${row.value}%` : `Rp ${Number(row.value).toLocaleString('id-ID')}` },
+    { key: 'date', label: 'Periode', render: (row) => `${row.start_date?.split('T')[0]} s/d ${row.end_date?.split('T')[0]}` },
+    { key: 'usage', label: 'Sisa', render: (row) => `${row.usage_remaining}/${row.usage_limit || '∞'}` },
     {
-      key: 'Status', label: 'Status',
+      key: 'status', label: 'Status',
       render: (row) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_BADGE[row.Status] || 'bg-gray-100 text-gray-500'}`}>
-          {STATUS_LABEL[row.Status] || row.Status}
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_BADGE[row.status] || 'bg-gray-100 text-gray-500'}`}>
+          {STATUS_LABEL[row.status] || row.status}
         </span>
       )
     },

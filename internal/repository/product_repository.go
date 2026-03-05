@@ -41,9 +41,9 @@ func CreateProduct(product *model.Product, variantIDs []uint) error {
 	}
 
 	if len(variantIDs) > 0 {
-		var variants []model.VariantCategory
-		tx.Find(&variants, variantIDs)
-		if err := tx.Model(product).Association("Variants").Replace(variants); err != nil {
+		var variantObjs []model.VariantCategory
+		tx.Find(&variantObjs, variantIDs)
+		if err := tx.Model(product).Association("Variants").Replace(variantObjs); err != nil {
 			tx.Rollback()
 			return err
 		}
@@ -60,11 +60,11 @@ func UpdateProduct(product *model.Product, variantIDs []uint) error {
 		return err
 	}
 
-	var variants []model.VariantCategory
+	var variantObjs []model.VariantCategory
 	if len(variantIDs) > 0 {
-		tx.Find(&variants, variantIDs)
+		tx.Find(&variantObjs, variantIDs)
 	}
-	if err := tx.Model(product).Association("Variants").Replace(variants); err != nil {
+	if err := tx.Model(product).Association("Variants").Replace(variantObjs); err != nil {
 		tx.Rollback()
 		return err
 	}

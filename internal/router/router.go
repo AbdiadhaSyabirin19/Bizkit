@@ -3,6 +3,7 @@ package router
 import (
 	"bizkit-backend/internal/handler"
 	"bizkit-backend/internal/middleware"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -11,12 +12,15 @@ func SetupRouter() *gin.Engine {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowOrigins:     []string{"http://localhost:5173", "http://localhost:5174", "http://localhost:5175"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
+
+	// Serve uploaded files
+	r.Static("/uploads", "./uploads")
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "pong"})
@@ -35,6 +39,9 @@ func SetupRouter() *gin.Engine {
 		protected.Use(middleware.AuthMiddleware())
 		{
 			protected.GET("/me", handler.GetMe)
+
+			// Upload
+			protected.POST("/upload", handler.UploadImage)
 
 			// Category
 			protected.GET("/categories", handler.GetAllCategories)
@@ -56,6 +63,13 @@ func SetupRouter() *gin.Engine {
 			protected.POST("/units", handler.CreateUnit)
 			protected.PUT("/units/:id", handler.UpdateUnit)
 			protected.DELETE("/units/:id", handler.DeleteUnit)
+
+			// Price Category (Multi Harga)
+			protected.GET("/price-categories", handler.GetAllPriceCategories)
+			protected.GET("/price-categories/:id", handler.GetPriceCategoryByID)
+			protected.POST("/price-categories", handler.CreatePriceCategory)
+			protected.PUT("/price-categories/:id", handler.UpdatePriceCategory)
+			protected.DELETE("/price-categories/:id", handler.DeletePriceCategory)
 
 			// Variant
 			protected.GET("/variants", handler.GetAllVariantCategories)

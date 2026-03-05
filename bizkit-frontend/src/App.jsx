@@ -3,10 +3,17 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import LoginPage from './pages/auth/LoginPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import CategoryPage from './pages/category/CategoryPage'
+import CategoryFormPage from './pages/category/CategoryFormPage'
 import BrandPage from './pages/brand/BrandPage'
+import BrandFormPage from './pages/brand/BrandFormPage'
 import UnitPage from './pages/unit/UnitPage'
+import UnitFormPage from './pages/unit/UnitFormPage'
 import VariantPage from './pages/variant/VariantPage'
+import VariantFormPage from './pages/variant/VariantFormPage'
+import PriceCategoryPage from './pages/price_category/PriceCategoryPage'
+import PriceCategoryFormPage from './pages/price_category/PriceCategoryFormPage'
 import ProductPage from './pages/product/ProductPage'
+import ProductFormPage from './pages/product/ProductFormPage'
 import UserPage from './pages/user/UserPage'
 import RolePage from './pages/role/RolePage'
 import PaymentMethodPage from './pages/payment/PaymentMethodPage'
@@ -44,10 +51,22 @@ function AppRoutes() {
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
       <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
       <Route path="/categories" element={<PrivateRoute><CategoryPage /></PrivateRoute>} />
+      <Route path="/categories/add" element={<PrivateRoute><CategoryFormPage /></PrivateRoute>} />
+      <Route path="/categories/edit/:id" element={<PrivateRoute><CategoryFormPage /></PrivateRoute>} />
       <Route path="/brands" element={<PrivateRoute><BrandPage /></PrivateRoute>} />
+      <Route path="/brands/add" element={<PrivateRoute><BrandFormPage /></PrivateRoute>} />
+      <Route path="/brands/edit/:id" element={<PrivateRoute><BrandFormPage /></PrivateRoute>} />
       <Route path="/units" element={<PrivateRoute><UnitPage /></PrivateRoute>} />
+      <Route path="/units/add" element={<PrivateRoute><UnitFormPage /></PrivateRoute>} />
       <Route path="/variants" element={<PrivateRoute><VariantPage /></PrivateRoute>} />
+      <Route path="/variants/add" element={<PrivateRoute><VariantFormPage /></PrivateRoute>} />
+      <Route path="/variants/edit/:id" element={<PrivateRoute><VariantFormPage /></PrivateRoute>} />
+      <Route path="/price-categories" element={<PrivateRoute><PriceCategoryPage /></PrivateRoute>} />
+      <Route path="/price-categories/add" element={<PrivateRoute><PriceCategoryFormPage /></PrivateRoute>} />
+      <Route path="/price-categories/edit/:id" element={<PrivateRoute><PriceCategoryFormPage /></PrivateRoute>} />
       <Route path="/products" element={<PrivateRoute><ProductPage /></PrivateRoute>} />
+      <Route path="/products/add" element={<PrivateRoute><ProductFormPage /></PrivateRoute>} />
+      <Route path="/products/edit/:id" element={<PrivateRoute><ProductFormPage /></PrivateRoute>} />
       <Route path="/users" element={<PrivateRoute><UserPage /></PrivateRoute>} />
       <Route path="/roles" element={<PrivateRoute><RolePage /></PrivateRoute>} />
       <Route path="/payment-methods" element={<PrivateRoute><PaymentMethodPage /></PrivateRoute>} />
