@@ -4,7 +4,6 @@ import ConfirmDialog from '../../components/ConfirmDialog'
 import api from '../../api/axios'
 import { useNavigate } from 'react-router-dom'
 
-
 const getID = (row) => row.ID || row.id
 
 const DAYS = [
@@ -49,6 +48,7 @@ export default function PromoPage() {
   const [confirm, setConfirm] = useState({ open: false, id: null })
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(defaultForm)
+  const [errors, setErrors] = useState({})
 
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
@@ -88,11 +88,13 @@ export default function PromoPage() {
 
   const openAdd = () => {
     setForm(defaultForm)
+    setErrors({})
     setEditItem(null)
     setShowForm(true)
   }
 
   const openEdit = (item) => {
+    setErrors({})
     setForm({
       name: item.name || '',
       promo_type: item.promo_type || 'discount',
@@ -119,8 +121,31 @@ export default function PromoPage() {
     setShowForm(true)
   }
 
+  const validatePromo = () => {
+    const e = {}
+    if (!form.name.trim()) e.name = 'Nama promo wajib diisi'
+    if (form.promo_type === 'discount' && (!form.discount_pct || Number(form.discount_pct) <= 0))
+      e.discount_pct = 'Persentase diskon wajib diisi dan lebih dari 0'
+    if (form.promo_type === 'discount' && Number(form.discount_pct) > 100)
+      e.discount_pct = 'Persentase diskon tidak boleh lebih dari 100%'
+    if (form.promo_type === 'cut_price' && (!form.cut_price || Number(form.cut_price) <= 0))
+      e.cut_price = 'Potongan harga wajib diisi dan lebih dari 0'
+    if (form.promo_type === 'special_price' && form.special_prices.length === 0)
+      e.special_prices = 'Minimal 1 produk harga spesial wajib ditambahkan'
+    if (!form.start_date) e.start_date = 'Tanggal mulai wajib diisi'
+    if (!form.end_date) e.end_date = 'Tanggal berakhir wajib diisi'
+    if (form.start_date && form.end_date && form.start_date > form.end_date)
+      e.end_date = 'Tanggal berakhir tidak boleh sebelum tanggal mulai'
+    if (form.voucher_type === 'custom' && !form.voucher_code.trim())
+      e.voucher_code = 'Kode voucher wajib diisi'
+    if (form.voucher_type === 'generate' && (!form.max_usage || Number(form.max_usage) <= 0))
+      e.max_usage = 'Jumlah voucher yang digenerate wajib diisi dan lebih dari 0'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
   const handleSave = async () => {
-    if (!form.name.trim()) return
+    if (!validatePromo()) return
     setSaving(true)
     try {
       if (editItem) {
@@ -166,6 +191,7 @@ export default function PromoPage() {
     const exists = form.special_prices.find(s => s.product_id === productId)
     if (!exists) {
       setForm(f => ({ ...f, special_prices: [...f.special_prices, { product_id: productId, buy_price: 0, name: productName }] }))
+      if (errors.special_prices) setErrors(er => ({ ...er, special_prices: '' }))
     }
   }
 
@@ -178,10 +204,10 @@ export default function PromoPage() {
   }
 
   const activeDays = form.active_days ? form.active_days.split(',').filter(Boolean) : []
-
   const promoTypeLabel = (t) => ({ special_price: 'Harga Spesial', discount: 'Diskon', cut_price: 'Potongan Harga' }[t] || t)
   const appliesToLabel = (t) => ({ all: 'Semua', category: 'Kategori', brand: 'Merek', product: 'Produk' }[t] || t)
 
+  // ===================== FORM VIEW =====================
   if (showForm) {
     return (
       <Layout title="Promo & Voucher">
@@ -200,14 +226,25 @@ export default function PromoPage() {
 
           <div className="space-y-5">
 
-            {/* Nama */}
+            {/* Informasi Dasar */}
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <h3 className="font-semibold text-gray-800 mb-4">Informasi Dasar</h3>
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nama Promo <span className="text-red-400">*</span></label>
-                  <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Contoh: Promo Gojek 20%" className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={e => {
+                      setForm(f => ({ ...f, name: e.target.value }))
+                      if (errors.name) setErrors(er => ({ ...er, name: '' }))
+                    }}
+                    placeholder="Contoh: Promo Gojek 20%"
+                    className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                  />
+                  {errors.name && <p className="text-xs text-red-400 mt-1">⚠ {errors.name}</p>}
                 </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
@@ -227,18 +264,15 @@ export default function PromoPage() {
                   </div>
                 </div>
 
-                {/* Pilih item berlaku */}
                 {form.applies_to !== 'all' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Pilih {appliesToLabel(form.applies_to)}
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Pilih {appliesToLabel(form.applies_to)}</label>
                     <div className="border border-gray-200 rounded-xl p-3 max-h-40 overflow-y-auto space-y-1">
                       {(form.applies_to === 'category' ? categories : form.applies_to === 'brand' ? brands : products).map(item => {
-                        const id = getID(item)
-                        const selected = form.items.some(i => i.ref_id === id && i.ref_type === form.applies_to)
+                        const itemId = getID(item)
+                        const selected = form.items.some(i => i.ref_id === itemId && i.ref_type === form.applies_to)
                         return (
-                          <div key={id} onClick={() => toggleItem(form.applies_to, id, item.name)} className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition ${selected ? 'bg-emerald-50 border border-emerald-300' : 'hover:bg-gray-50 border border-transparent'}`}>
+                          <div key={itemId} onClick={() => toggleItem(form.applies_to, itemId, item.name)} className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition ${selected ? 'bg-emerald-50 border border-emerald-300' : 'hover:bg-gray-50 border border-transparent'}`}>
                             <span className="text-sm text-gray-700">{item.name}</span>
                             <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${selected ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>
                               {selected && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
@@ -261,7 +295,10 @@ export default function PromoPage() {
                   { value: 'discount', label: 'Diskon %', icon: '💸' },
                   { value: 'cut_price', label: 'Potongan Harga', icon: '✂️' },
                 ].map(t => (
-                  <button key={t.value} onClick={() => setForm(f => ({ ...f, promo_type: t.value, special_prices: [] }))} className={`p-3 rounded-xl border-2 text-center transition ${form.promo_type === t.value ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                  <button key={t.value} onClick={() => {
+                    setForm(f => ({ ...f, promo_type: t.value, special_prices: [] }))
+                    setErrors(er => ({ ...er, discount_pct: '', cut_price: '', special_prices: '' }))
+                  }} className={`p-3 rounded-xl border-2 text-center transition ${form.promo_type === t.value ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'}`}>
                     <p className="text-xl mb-1">{t.icon}</p>
                     <p className="text-xs font-medium text-gray-700">{t.label}</p>
                   </button>
@@ -277,58 +314,38 @@ export default function PromoPage() {
                       <span className="ml-2 text-xs text-orange-400 font-normal">⚠ Pilih {appliesToLabel(form.applies_to)} dulu di atas</span>
                     )}
                   </label>
+                  {errors.special_prices && <p className="text-xs text-red-400 mb-2">⚠ {errors.special_prices}</p>}
 
-                  <div className="border border-gray-200 rounded-xl p-3 max-h-40 overflow-y-auto mb-2 space-y-1">
+                  <div className={`border rounded-xl p-3 max-h-40 overflow-y-auto mb-2 space-y-1 ${errors.special_prices ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}>
                     {(() => {
-                      // Filter produk berdasarkan applies_to dan items yang dipilih
                       let filteredProducts = products
-
                       if (form.applies_to === 'category' && form.items.length > 0) {
-                        const selectedCategoryIDs = form.items.map(i => i.ref_id)
-                        filteredProducts = products.filter(p =>
-                          selectedCategoryIDs.includes(p.category_id)
-                        )
+                        const ids = form.items.map(i => i.ref_id)
+                        filteredProducts = products.filter(p => ids.includes(p.category_id))
                       } else if (form.applies_to === 'brand' && form.items.length > 0) {
-                        const selectedBrandIDs = form.items.map(i => i.ref_id)
-                        filteredProducts = products.filter(p =>
-                          selectedBrandIDs.includes(p.brand_id)
-                        )
+                        const ids = form.items.map(i => i.ref_id)
+                        filteredProducts = products.filter(p => ids.includes(p.brand_id))
                       } else if (form.applies_to === 'product' && form.items.length > 0) {
-                        const selectedProductIDs = form.items.map(i => i.ref_id)
-                        filteredProducts = products.filter(p =>
-                          selectedProductIDs.includes(getID(p))
-                        )
+                        const ids = form.items.map(i => i.ref_id)
+                        filteredProducts = products.filter(p => ids.includes(getID(p)))
                       }
 
                       if (filteredProducts.length === 0) {
-                        return (
-                          <p className="text-center text-gray-400 text-sm py-4">
-                            {form.applies_to !== 'all' && form.items.length === 0
-                              ? `Pilih ${appliesToLabel(form.applies_to)} terlebih dahulu`
-                              : 'Tidak ada produk tersedia'}
-                          </p>
-                        )
+                        return <p className="text-center text-gray-400 text-sm py-4">{form.applies_to !== 'all' && form.items.length === 0 ? `Pilih ${appliesToLabel(form.applies_to)} terlebih dahulu` : 'Tidak ada produk tersedia'}</p>
                       }
 
                       return filteredProducts.map(p => {
                         const pid = getID(p)
                         const added = form.special_prices.find(s => s.product_id === pid)
                         return (
-                          <div
-                            key={pid}
-                            onClick={() => !added && addSpecialPrice(pid, p.name)}
-                            className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition ${added ? 'bg-emerald-50 border border-emerald-200' : 'hover:bg-gray-50 border border-transparent'}`}
-                          >
+                          <div key={pid} onClick={() => !added && addSpecialPrice(pid, p.name)} className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition ${added ? 'bg-emerald-50 border border-emerald-200' : 'hover:bg-gray-50 border border-transparent'}`}>
                             <div>
                               <span className="text-sm text-gray-700">{p.name}</span>
-                              {form.applies_to === 'all' && p.category?.name && (
-                                <span className="ml-2 text-xs text-gray-400">{p.category.name}</span>
-                              )}
+                              {form.applies_to === 'all' && p.category?.name && <span className="ml-2 text-xs text-gray-400">{p.category.name}</span>}
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-gray-400">Rp {Number(p.price).toLocaleString('id-ID')}</span>
-                              {!added && <span className="text-xs text-emerald-600">+ Tambah</span>}
-                              {added && <span className="text-xs text-emerald-600">✓ Ditambahkan</span>}
+                              {!added ? <span className="text-xs text-emerald-600">+ Tambah</span> : <span className="text-xs text-emerald-600">✓ Ditambahkan</span>}
                             </div>
                           </div>
                         )
@@ -338,29 +355,19 @@ export default function PromoPage() {
 
                   {form.special_prices.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-xs text-gray-400 mb-1">{form.special_prices.length} produk dipilih:</p>
+                      <p className="text-xs text-gray-400">{form.special_prices.length} produk dipilih:</p>
                       {form.special_prices.map((sp, idx) => {
                         const prod = products.find(p => getID(p) === sp.product_id)
                         return (
                           <div key={idx} className="flex items-center gap-2 bg-gray-50 rounded-xl p-2">
                             <span className="flex-1 text-sm text-gray-700">{prod?.name || sp.name}</span>
-                            <span className="text-xs text-gray-400">
-                              Harga normal: Rp {Number(prod?.price || 0).toLocaleString('id-ID')}
-                            </span>
+                            <span className="text-xs text-gray-400">Harga normal: Rp {Number(prod?.price || 0).toLocaleString('id-ID')}</span>
                             <div className="relative w-36">
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">Rp</span>
-                              <input
-                                type="number"
-                                value={sp.buy_price}
-                                onChange={e => updateSpecialPrice(idx, Number(e.target.value))}
-                                className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                                placeholder="0"
-                              />
+                              <input type="number" value={sp.buy_price} onChange={e => updateSpecialPrice(idx, Number(e.target.value))} className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="0" />
                             </div>
                             <button onClick={() => removeSpecialPrice(idx)} className="text-red-400 hover:text-red-600">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                           </div>
                         )
@@ -374,8 +381,18 @@ export default function PromoPage() {
               {form.promo_type === 'discount' && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Diskon (%)</label>
-                    <input type="number" value={form.discount_pct} onChange={e => setForm(f => ({ ...f, discount_pct: Number(e.target.value) }))} placeholder="0" min="0" max="100" className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Diskon (%) <span className="text-red-400">*</span></label>
+                    <input
+                      type="number"
+                      value={form.discount_pct}
+                      onChange={e => {
+                        setForm(f => ({ ...f, discount_pct: Number(e.target.value) }))
+                        if (errors.discount_pct) setErrors(er => ({ ...er, discount_pct: '' }))
+                      }}
+                      placeholder="0" min="0" max="100"
+                      className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${errors.discount_pct ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                    />
+                    {errors.discount_pct && <p className="text-xs text-red-400 mt-1">⚠ {errors.discount_pct}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Maksimal Diskon (Rp)</label>
@@ -383,6 +400,7 @@ export default function PromoPage() {
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
                       <input type="number" value={form.max_discount} onChange={e => setForm(f => ({ ...f, max_discount: Number(e.target.value) }))} placeholder="0" className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
                     </div>
+                    <p className="text-xs text-gray-400 mt-1">Kosongkan jika tidak ada batas maksimal</p>
                   </div>
                 </div>
               )}
@@ -390,16 +408,26 @@ export default function PromoPage() {
               {/* Potongan Harga */}
               {form.promo_type === 'cut_price' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Potongan Harga (Rp)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Potongan Harga (Rp) <span className="text-red-400">*</span></label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
-                    <input type="number" value={form.cut_price} onChange={e => setForm(f => ({ ...f, cut_price: Number(e.target.value) }))} placeholder="0" className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                    <input
+                      type="number"
+                      value={form.cut_price}
+                      onChange={e => {
+                        setForm(f => ({ ...f, cut_price: Number(e.target.value) }))
+                        if (errors.cut_price) setErrors(er => ({ ...er, cut_price: '' }))
+                      }}
+                      placeholder="0"
+                      className={`w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${errors.cut_price ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                    />
                   </div>
+                  {errors.cut_price && <p className="text-xs text-red-400 mt-1">⚠ {errors.cut_price}</p>}
                 </div>
               )}
             </div>
 
-            {/* Syarat */}
+            {/* Syarat Promo */}
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <h3 className="font-semibold text-gray-800 mb-4">Syarat Promo</h3>
               <div className="space-y-3">
@@ -458,12 +486,30 @@ export default function PromoPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Mulai</label>
-                    <input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Mulai <span className="text-red-400">*</span></label>
+                    <input
+                      type="date"
+                      value={form.start_date}
+                      onChange={e => {
+                        setForm(f => ({ ...f, start_date: e.target.value }))
+                        if (errors.start_date) setErrors(er => ({ ...er, start_date: '' }))
+                      }}
+                      className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${errors.start_date ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                    />
+                    {errors.start_date && <p className="text-xs text-red-400 mt-1">⚠ {errors.start_date}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Berakhir</label>
-                    <input type="date" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Berakhir <span className="text-red-400">*</span></label>
+                    <input
+                      type="date"
+                      value={form.end_date}
+                      onChange={e => {
+                        setForm(f => ({ ...f, end_date: e.target.value }))
+                        if (errors.end_date) setErrors(er => ({ ...er, end_date: '' }))
+                      }}
+                      className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${errors.end_date ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                    />
+                    {errors.end_date && <p className="text-xs text-red-400 mt-1">⚠ {errors.end_date}</p>}
                   </div>
                 </div>
               </div>
@@ -481,7 +527,10 @@ export default function PromoPage() {
                       { value: 'custom', label: 'Kode Custom', icon: '🎟️' },
                       { value: 'generate', label: 'Generate Otomatis', icon: '⚡' },
                     ].map(v => (
-                      <button key={v.value} onClick={() => setForm(f => ({ ...f, voucher_type: v.value }))} className={`p-3 rounded-xl border-2 text-center transition ${form.voucher_type === v.value ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                      <button key={v.value} onClick={() => {
+                        setForm(f => ({ ...f, voucher_type: v.value }))
+                        setErrors(er => ({ ...er, voucher_code: '', max_usage: '' }))
+                      }} className={`p-3 rounded-xl border-2 text-center transition ${form.voucher_type === v.value ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'}`}>
                         <p className="text-xl mb-1">{v.icon}</p>
                         <p className="text-xs font-medium text-gray-700">{v.label}</p>
                       </button>
@@ -491,17 +540,38 @@ export default function PromoPage() {
 
                 {form.voucher_type === 'custom' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Kode Voucher</label>
-                    <input type="text" value={form.voucher_code} onChange={e => setForm(f => ({ ...f, voucher_code: e.target.value.toUpperCase() }))} placeholder="Contoh: DISKON20" className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 font-mono" />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Kode Voucher <span className="text-red-400">*</span></label>
+                    <input
+                      type="text"
+                      value={form.voucher_code}
+                      onChange={e => {
+                        setForm(f => ({ ...f, voucher_code: e.target.value.toUpperCase() }))
+                        if (errors.voucher_code) setErrors(er => ({ ...er, voucher_code: '' }))
+                      }}
+                      placeholder="Contoh: DISKON20"
+                      className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 font-mono ${errors.voucher_code ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                    />
+                    {errors.voucher_code && <p className="text-xs text-red-400 mt-1">⚠ {errors.voucher_code}</p>}
                   </div>
                 )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {form.voucher_type === 'generate' ? 'Jumlah Voucher yang Digenerate' : 'Maks Penggunaan Promo'}
+                    {form.voucher_type === 'generate' ? <>Jumlah Voucher <span className="text-red-400">*</span></> : 'Maks Penggunaan Promo'}
                   </label>
-                  <input type="number" value={form.max_usage} onChange={e => setForm(f => ({ ...f, max_usage: Number(e.target.value) }))} placeholder="0 = tidak terbatas" min="0" className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-                  <p className="text-xs text-gray-400 mt-1">Isi 0 jika tidak ada batas penggunaan</p>
+                  <input
+                    type="number"
+                    value={form.max_usage}
+                    onChange={e => {
+                      setForm(f => ({ ...f, max_usage: Number(e.target.value) }))
+                      if (errors.max_usage) setErrors(er => ({ ...er, max_usage: '' }))
+                    }}
+                    placeholder={form.voucher_type === 'generate' ? 'Jumlah voucher' : '0 = tidak terbatas'}
+                    min="0"
+                    className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${errors.max_usage ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                  />
+                  {errors.max_usage && <p className="text-xs text-red-400 mt-1">⚠ {errors.max_usage}</p>}
+                  {form.voucher_type !== 'generate' && <p className="text-xs text-gray-400 mt-1">Isi 0 jika tidak ada batas penggunaan</p>}
                 </div>
               </div>
             </div>
@@ -509,7 +579,9 @@ export default function PromoPage() {
             {/* Tombol */}
             <div className="flex gap-3 pb-6">
               <button onClick={() => setShowForm(false)} className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 text-sm font-medium transition">Batal</button>
-              <button onClick={handleSave} disabled={saving} className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white rounded-xl text-sm font-medium transition">{saving ? 'Menyimpan...' : 'Simpan Promo'}</button>
+              <button onClick={handleSave} disabled={saving} className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white rounded-xl text-sm font-medium transition">
+                {saving ? 'Menyimpan...' : editItem ? 'Simpan Perubahan' : 'Simpan Promo'}
+              </button>
             </div>
           </div>
         </div>
@@ -517,6 +589,7 @@ export default function PromoPage() {
     )
   }
 
+  // ===================== LIST VIEW =====================
   return (
     <Layout title="Promo & Voucher">
       <div className="max-w-6xl mx-auto">
@@ -578,12 +651,7 @@ export default function PromoPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => navigate(`/promos/${getID(promo)}`)}
-                      className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-xs transition"
-                    >
-                      Detail
-                    </button>
+                    <button onClick={() => navigate(`/promos/${getID(promo)}`)} className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-xs transition">Detail</button>
                     <button onClick={() => openEdit(promo)} className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs transition">Edit</button>
                     <button onClick={() => setConfirm({ open: true, id: getID(promo) })} className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs transition">Hapus</button>
                   </div>

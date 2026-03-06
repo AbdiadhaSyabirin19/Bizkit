@@ -14,6 +14,15 @@ export default function BrandFormPage() {
   const [imagePreview, setImagePreview] = useState(null)
   const [form, setForm] = useState({ name: '', image: '' })
 
+  const [errors, setErrors] = useState({})
+
+  const validate = () => {
+    const e = {}
+    if (!form.name.trim()) e.name = 'Nama merek wajib diisi'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
   useEffect(() => {
     if (isEdit) fetchBrand()
   }, [id])
@@ -41,7 +50,7 @@ export default function BrandFormPage() {
   }
 
   const handleSave = async () => {
-    if (!form.name.trim()) return
+    if (!validate()) return
     setSaving(true)
     try {
       if (isEdit) {
@@ -120,12 +129,16 @@ export default function BrandFormPage() {
               <input
                 type="text"
                 value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                onChange={e => {
+                  setForm(f => ({ ...f, name: e.target.value }))
+                  if (errors.name) setErrors({})
+                }}
                 placeholder="Masukkan nama merek"
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                 onKeyDown={e => e.key === 'Enter' && handleSave()}
                 autoFocus
               />
+              {errors.name && <p className="text-xs text-red-400 mt-1">⚠ {errors.name}</p>}
             </div>
           </div>
 

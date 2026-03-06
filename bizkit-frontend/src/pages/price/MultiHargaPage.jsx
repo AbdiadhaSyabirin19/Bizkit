@@ -55,12 +55,6 @@ export default function MultiHargaPage() {
       render: (row) => (
         <div className="flex gap-2">
           <button
-            onClick={() => navigate(`/price-categories/${getID(row)}/products`)}
-            className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs transition"
-          >
-            Atur Harga
-          </button>
-          <button
             onClick={() => navigate(`/price-categories/${getID(row)}/edit`)}
             className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs transition"
           >

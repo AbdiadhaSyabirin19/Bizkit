@@ -17,7 +17,21 @@ export default function ShiftReportPage() {
     finally { setLoading(false) }
   }
 
+  const formatDate = (val) => {
+    if (!val) return '-'
+    return new Date(val).toLocaleDateString('id-ID', {
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    })
+  }
+
   const formatTime = (val) => {
+    if (!val) return '-'
+    return new Date(val).toLocaleTimeString('id-ID', {
+      hour: '2-digit', minute: '2-digit'
+    })
+  }
+
+  const formatDateTime = (val) => {
     if (!val) return '-'
     return new Date(val).toLocaleString('id-ID', {
       day: '2-digit', month: '2-digit', year: 'numeric',
@@ -25,9 +39,38 @@ export default function ShiftReportPage() {
     })
   }
 
+  const formatRp = (val) => `Rp ${Number(val || 0).toLocaleString('id-ID')}`
+
+  // Hitung saldo running total (urutan dari terlama ke terbaru)
+  const getShiftsWithSaldo = (shifts) => {
+    if (!shifts?.length) return []
+    // Balik urutan karena backend ORDER BY DESC
+    const sorted = [...shifts].reverse()
+    let saldo = 0
+    return sorted.map((shift, idx) => {
+      saldo += (shift.CashIn || 0) - (shift.CashOut || 0)
+      return { ...shift, saldo, no: idx + 1 }
+    }).reverse() // tampilkan terbaru di atas
+  }
+
+  const getJenis = (shift) => {
+    if (shift.CashIn > 0 && shift.CashOut > 0) return { label: 'Buka & Tutup', color: 'bg-blue-100 text-blue-700' }
+    if (shift.CashOut > 0) return { label: 'Tutup Shift', color: 'bg-red-100 text-red-600' }
+    return { label: 'Buka Shift', color: 'bg-emerald-100 text-emerald-700' }
+  }
+
+  const getUraian = (shift) => {
+    const tgl = formatDate(shift.StartTime)
+    const jam = formatTime(shift.StartTime)
+    return `Shift ${tgl} ${jam}`
+  }
+
+  const shiftsWithSaldo = getShiftsWithSaldo(data?.shifts)
+  const totalSelisih = (data?.total_cash_in || 0) - (data?.total_cash_out || 0)
+
   return (
     <Layout title="Pergantian Shift">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="mb-5">
           <h1 className="text-xl font-bold text-gray-800">Pergantian Shift</h1>
           <p className="text-gray-500 text-sm">Laporan kas masuk & keluar per shift</p>
@@ -71,68 +114,159 @@ export default function ShiftReportPage() {
 
         {data && !loading && (
           <>
-            {/* Summary */}
-            <div className="grid grid-cols-2 gap-4 mb-5">
-              <div className="bg-white rounded-2xl p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-gray-500 text-sm">Total Kas Masuk</p>
-                  <span className="text-2xl">💵</span>
-                </div>
-                <p className="text-xl font-bold text-emerald-600">
-                  Rp {Number(data.total_cash_in).toLocaleString('id-ID')}
-                </p>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-4 gap-4 mb-5">
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <p className="text-gray-400 text-xs mb-1">Total Shift</p>
+                <p className="text-2xl font-bold text-gray-800">{data.shifts?.length || 0}</p>
+                <p className="text-xs text-gray-400 mt-1">shift tercatat</p>
               </div>
-              <div className="bg-white rounded-2xl p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-gray-500 text-sm">Total Kas Keluar</p>
-                  <span className="text-2xl">💸</span>
-                </div>
-                <p className="text-xl font-bold text-red-500">
-                  Rp {Number(data.total_cash_out).toLocaleString('id-ID')}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <p className="text-gray-400 text-xs mb-1">Total Masuk</p>
+                <p className="text-xl font-bold text-emerald-600">{formatRp(data.total_cash_in)}</p>
+                <p className="text-xs text-gray-400 mt-1">kas masuk</p>
+              </div>
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <p className="text-gray-400 text-xs mb-1">Total Keluar</p>
+                <p className="text-xl font-bold text-red-500">{formatRp(data.total_cash_out)}</p>
+                <p className="text-xs text-gray-400 mt-1">kas keluar</p>
+              </div>
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <p className="text-gray-400 text-xs mb-1">Saldo Akhir</p>
+                <p className={`text-xl font-bold ${totalSelisih >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                  {formatRp(totalSelisih)}
                 </p>
+                <p className="text-xs text-gray-400 mt-1">selisih total</p>
               </div>
             </div>
 
             {/* Tabel */}
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b">
-                <h2 className="font-semibold text-gray-800">Detail Shift</h2>
+              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="font-semibold text-gray-800">Detail Pergantian Shift</h2>
+                <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+                  {data.shifts?.length || 0} data
+                </span>
               </div>
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    {['No', 'Waktu Mulai', 'Waktu Selesai', 'Karyawan', 'Kas Masuk', 'Kas Keluar', 'Selisih'].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {data.shifts?.length > 0 ? data.shifts.map((shift, idx) => (
-                    <tr key={shift.ID || idx} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-gray-700">{idx + 1}</td>
-                      <td className="px-4 py-3 text-gray-700 text-xs">{formatTime(shift.StartTime)}</td>
-                      <td className="px-4 py-3 text-gray-700 text-xs">{formatTime(shift.EndTime)}</td>
-                      <td className="px-4 py-3 text-gray-700">{shift.user?.Name || '-'}</td>
-                      <td className="px-4 py-3 text-emerald-600 font-medium">
-                        Rp {Number(shift.CashIn).toLocaleString('id-ID')}
-                      </td>
-                      <td className="px-4 py-3 text-red-500 font-medium">
-                        Rp {Number(shift.CashOut).toLocaleString('id-ID')}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-gray-800">
-                        Rp {Number(shift.Difference).toLocaleString('id-ID')}
-                      </td>
-                    </tr>
-                  )) : (
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
-                      <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
-                        <p className="text-3xl mb-2">📭</p>
-                        <p>Tidak ada data shift pada periode ini</p>
-                      </td>
+                      {[
+                        { label: 'Waktu', w: 'w-32' },
+                        { label: 'Uraian', w: 'w-40' },
+                        { label: 'Jenis', w: 'w-28' },
+                        { label: 'Kasir', w: 'w-28' },
+                        { label: 'Masuk', w: 'w-28' },
+                        { label: 'Keluar', w: 'w-28' },
+                        { label: 'Selisih', w: 'w-28' },
+                        { label: 'Saldo', w: 'w-28' },
+                      ].map(h => (
+                        <th key={h.label} className={`px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase ${h.w}`}>
+                          {h.label}
+                        </th>
+                      ))}
                     </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {shiftsWithSaldo.length > 0 ? shiftsWithSaldo.map((shift, idx) => {
+                      const jenis = getJenis(shift)
+                      const selisih = (shift.CashIn || 0) - (shift.CashOut || 0)
+                      const isPositif = selisih >= 0
+                      const isSaldoPositif = shift.saldo >= 0
+
+                      return (
+                        <tr key={shift.ID || idx} className="hover:bg-gray-50 transition">
+                          {/* Waktu */}
+                          <td className="px-4 py-3">
+                            <p className="text-xs font-medium text-gray-700">{formatDate(shift.StartTime)}</p>
+                            <p className="text-xs text-gray-400">
+                              {formatTime(shift.StartTime)}
+                              {shift.EndTime && shift.EndTime !== '0001-01-01T00:00:00Z'
+                                ? ` – ${formatTime(shift.EndTime)}`
+                                : ''}
+                            </p>
+                          </td>
+
+                          {/* Uraian */}
+                          <td className="px-4 py-3">
+                            <p className="text-xs text-gray-700">{getUraian(shift)}</p>
+                            {shift.EndTime && shift.EndTime !== '0001-01-01T00:00:00Z' && (
+                              <p className="text-xs text-gray-400">s/d {formatDateTime(shift.EndTime)}</p>
+                            )}
+                          </td>
+
+                          {/* Jenis */}
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-1 rounded-lg text-xs font-medium ${jenis.color}`}>
+                              {jenis.label}
+                            </span>
+                          </td>
+
+                          {/* Kasir */}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-emerald-700 text-xs font-bold">
+                                  {shift.user?.Name?.charAt(0)?.toUpperCase() || '?'}
+                                </span>
+                              </div>
+                              <span className="text-xs text-gray-700">{shift.user?.Name || '-'}</span>
+                            </div>
+                          </td>
+
+                          {/* Masuk */}
+                          <td className="px-4 py-3">
+                            <p className="text-xs font-semibold text-emerald-600">{formatRp(shift.CashIn)}</p>
+                          </td>
+
+                          {/* Keluar */}
+                          <td className="px-4 py-3">
+                            <p className="text-xs font-semibold text-red-500">{formatRp(shift.CashOut)}</p>
+                          </td>
+
+                          {/* Selisih */}
+                          <td className="px-4 py-3">
+                            <p className={`text-xs font-semibold ${isPositif ? 'text-blue-600' : 'text-red-600'}`}>
+                              {isPositif ? '+' : ''}{formatRp(selisih)}
+                            </p>
+                          </td>
+
+                          {/* Saldo */}
+                          <td className="px-4 py-3">
+                            <p className={`text-xs font-bold ${isSaldoPositif ? 'text-gray-800' : 'text-red-600'}`}>
+                              {formatRp(shift.saldo)}
+                            </p>
+                          </td>
+                        </tr>
+                      )
+                    }) : (
+                      <tr>
+                        <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
+                          <p className="text-3xl mb-2">📭</p>
+                          <p>Tidak ada data shift pada periode ini</p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+
+                  {/* Footer total */}
+                  {shiftsWithSaldo.length > 0 && (
+                    <tfoot className="bg-gray-50 border-t-2 border-gray-200">
+                      <tr>
+                        <td colSpan={4} className="px-4 py-3 text-xs font-bold text-gray-600 uppercase">Total</td>
+                        <td className="px-4 py-3 text-xs font-bold text-emerald-600">{formatRp(data.total_cash_in)}</td>
+                        <td className="px-4 py-3 text-xs font-bold text-red-500">{formatRp(data.total_cash_out)}</td>
+                        <td className="px-4 py-3 text-xs font-bold text-blue-600">
+                          {totalSelisih >= 0 ? '+' : ''}{formatRp(totalSelisih)}
+                        </td>
+                        <td className="px-4 py-3 text-xs font-bold text-gray-800">{formatRp(totalSelisih)}</td>
+                      </tr>
+                    </tfoot>
                   )}
-                </tbody>
-              </table>
+                </table>
+              </div>
             </div>
           </>
         )}

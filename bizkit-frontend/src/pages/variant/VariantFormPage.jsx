@@ -20,6 +20,16 @@ export default function VariantFormPage() {
     status: 'active',
     options: [{ name: '', additional_price: 0 }]
   })
+  const [errors, setErrors] = useState({})
+
+  const validate = () => {
+    const e = {}
+    if (!form.name.trim()) e.name = 'Nama varian wajib diisi'
+    if (Number(form.max_select) < Number(form.min_select)) e.max_select = 'Maks pilihan tidak boleh kurang dari min pilihan'
+    if (form.options.filter(o => o.name.trim()).length === 0) e.options = 'Minimal 1 opsi wajib diisi'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
 
   useEffect(() => {
     if (isEdit) fetchVariant()
@@ -52,7 +62,7 @@ export default function VariantFormPage() {
   }))
 
   const handleSave = async () => {
-    if (!form.name.trim()) return
+    if (!validate()) return
     setSaving(true)
     try {
       const payload = {
@@ -112,11 +122,15 @@ export default function VariantFormPage() {
               <input
                 type="text"
                 value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                onChange={e => {
+                  setForm(f => ({ ...f, name: e.target.value }))
+                  if (errors.name) setErrors(er => ({ ...er, name: '' }))
+                }}
                 placeholder="Contoh: Level Pedas, Topping, Ukuran"
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                 autoFocus
               />
+              {errors.name && <p className="text-xs text-red-400 mt-1">⚠ {errors.name}</p>}
             </div>
 
             <div>
@@ -147,9 +161,13 @@ export default function VariantFormPage() {
                   type="number"
                   min="1"
                   value={form.max_select}
-                  onChange={e => setForm(f => ({ ...f, max_select: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  onChange={e => {
+                    setForm(f => ({ ...f, max_select: e.target.value }))
+                    if (errors.max_select) setErrors(er => ({ ...er, max_select: '' }))
+                  }}
+                  className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${errors.max_select ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                 />
+                {errors.max_select && <p className="text-xs text-red-400 mt-1">⚠ {errors.max_select}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
@@ -182,6 +200,7 @@ export default function VariantFormPage() {
                 Tambah Opsi
               </button>
             </div>
+            {errors.options && <p className="text-xs text-red-400 mb-2">⚠ {errors.options}</p>}
 
             {/* Header kolom */}
             <div className="grid grid-cols-12 gap-2 mb-1 px-1">

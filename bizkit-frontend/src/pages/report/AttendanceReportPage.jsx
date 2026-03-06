@@ -6,6 +6,7 @@ export default function AttendanceReportPage() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [selectedPhoto, setSelectedPhoto] = useState(null)
 
   useEffect(() => { fetchData() }, [date])
 
@@ -31,18 +32,47 @@ export default function AttendanceReportPage() {
   }
 
   const formatTime = (val) => {
-    if (!val) return '-'
+    if (!val || val === '0001-01-01T00:00:00Z') return '-'
     return new Date(val).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  const formatDateTime = (val) => {
+    if (!val || val === '0001-01-01T00:00:00Z') return '-'
+    return new Date(val).toLocaleString('id-ID', {
+      weekday: 'long', year: 'numeric', month: 'long',
+      day: 'numeric', hour: '2-digit', minute: '2-digit'
+    })
   }
 
   const formatDate = (val) => {
     if (!val) return '-'
-    return new Date(val).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    return new Date(val).toLocaleDateString('id-ID', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    })
   }
+
+  const getDuration = (checkIn, checkOut) => {
+    if (!checkIn || !checkOut) return null
+    if (checkIn === '0001-01-01T00:00:00Z' || checkOut === '0001-01-01T00:00:00Z') return null
+    const diff = new Date(checkOut) - new Date(checkIn)
+    if (diff <= 0) return null
+    const hours = Math.floor(diff / 3600000)
+    const minutes = Math.floor((diff % 3600000) / 60000)
+    return `${hours}j ${minutes}m`
+  }
+
+  const getInitial = (name) => name?.charAt(0)?.toUpperCase() || '?'
+
+  const avatarColors = [
+    'bg-emerald-500', 'bg-blue-500', 'bg-purple-500',
+    'bg-orange-500', 'bg-pink-500', 'bg-teal-500'
+  ]
 
   return (
     <Layout title="Laporan Absensi">
       <div className="max-w-5xl mx-auto">
+
+        {/* Header */}
         <div className="mb-5">
           <h1 className="text-xl font-bold text-gray-800">Laporan Absensi</h1>
           <p className="text-gray-500 text-sm">Rekap absensi karyawan per hari</p>
@@ -71,75 +101,168 @@ export default function AttendanceReportPage() {
           </button>
         </div>
 
-        {/* Total */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm mb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-              <span className="text-2xl">👥</span>
+        {/* Summary Card */}
+        <div className="grid grid-cols-3 gap-4 mb-5">
+          <div className="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <span className="text-lg">👥</span>
             </div>
             <div>
-              <p className="text-gray-500 text-sm">Total Hadir</p>
-              <p className="text-2xl font-bold text-gray-800">{data?.total || 0} Karyawan</p>
+              <p className="text-gray-400 text-xs">Total Hadir</p>
+              <p className="text-xl font-bold text-gray-800">{data?.total || 0}</p>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <span className="text-lg">✅</span>
+            </div>
+            <div>
+              <p className="text-gray-400 text-xs">Sudah Keluar</p>
+              <p className="text-xl font-bold text-gray-800">
+                {data?.attendances?.filter(a => a.CheckOut && a.CheckOut !== '0001-01-01T00:00:00Z').length || 0}
+              </p>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-3">
+            <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <span className="text-lg">⏳</span>
+            </div>
+            <div>
+              <p className="text-gray-400 text-xs">Masih Kerja</p>
+              <p className="text-xl font-bold text-gray-800">
+                {data?.attendances?.filter(a => !a.CheckOut || a.CheckOut === '0001-01-01T00:00:00Z').length || 0}
+              </p>
             </div>
           </div>
         </div>
 
+        {/* List Absensi */}
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500"></div>
           </div>
-        ) : (
+        ) : data?.attendances?.length > 0 ? (
           <div className="space-y-4">
-            {data?.attendances?.length > 0 ? data.attendances.map((att, idx) => (
-              <div key={att.ID || idx} className="bg-white rounded-2xl p-5 shadow-sm">
-                <div className="flex items-center gap-4">
-                  {/* Avatar */}
-                  <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold text-lg">
-                      {att.user?.Name?.charAt(0).toUpperCase() || '?'}
-                    </span>
-                  </div>
+            {data.attendances.map((att, idx) => {
+              const duration = getDuration(att.CheckIn, att.CheckOut)
+              const color = avatarColors[idx % avatarColors.length]
+              const hasPhoto = att.Photo && att.Photo !== ''
+              const sudahKeluar = att.CheckOut && att.CheckOut !== '0001-01-01T00:00:00Z'
 
-                  {/* Info */}
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-800">{att.user?.Name || '-'}</p>
-                    <p className="text-gray-400 text-xs">{att.user?.role?.Name || '-'}</p>
-                  </div>
+              return (
+                <div key={att.ID || idx} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
 
-                  {/* Waktu */}
-                  <div className="flex gap-6 text-sm">
-                    <div className="text-center">
-                      <p className="text-gray-400 text-xs mb-1">Masuk</p>
-                      <p className="font-semibold text-emerald-600">{formatTime(att.CheckIn)}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-gray-400 text-xs mb-1">Keluar</p>
-                      <p className="font-semibold text-red-500">{formatTime(att.CheckOut)}</p>
-                    </div>
-                  </div>
+                  {/* Header kartu */}
+                  <div className="flex items-center gap-4 p-5">
 
-                  {/* Foto */}
-                  {att.Photo && (
+                    {/* Avatar / Foto */}
                     <div className="flex-shrink-0">
-                      <img
-                        src={att.Photo}
-                        alt="Foto absensi"
-                        className="w-12 h-12 rounded-xl object-cover border border-gray-200"
-                        onError={e => e.target.style.display = 'none'}
-                      />
+                      {hasPhoto ? (
+                        <img
+                          src={att.Photo}
+                          alt={att.user?.Name}
+                          className="w-14 h-14 rounded-2xl object-cover border-2 border-emerald-200 cursor-pointer hover:opacity-90 transition"
+                          onClick={() => setSelectedPhoto({ url: att.Photo, name: att.user?.Name })}
+                          onError={e => {
+                            e.target.style.display = 'none'
+                            e.target.nextSibling.style.display = 'flex'
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        className={`w-14 h-14 rounded-2xl ${color} flex items-center justify-center ${hasPhoto ? 'hidden' : 'flex'}`}
+                      >
+                        <span className="text-white font-bold text-xl">{getInitial(att.user?.Name)}</span>
+                      </div>
                     </div>
-                  )}
+
+                    {/* Info user */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-bold text-gray-800 text-base">{att.user?.Name || '-'}</p>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sudahKeluar ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-600'}`}>
+                          {sudahKeluar ? 'Selesai' : 'Sedang Bekerja'}
+                        </span>
+                      </div>
+                      <p className="text-gray-400 text-xs mt-0.5">{att.user?.role?.Name || 'Karyawan'}</p>
+                      {duration && (
+                        <p className="text-emerald-600 text-xs mt-1 font-medium">⏱ Durasi kerja: {duration}</p>
+                      )}
+                    </div>
+
+                    {/* Foto thumbnail jika ada — klik untuk perbesar */}
+                    {hasPhoto && (
+                      <button
+                        onClick={() => setSelectedPhoto({ url: att.Photo, name: att.user?.Name })}
+                        className="flex-shrink-0 group relative"
+                      >
+                        <img
+                          src={att.Photo}
+                          alt="Bukti foto"
+                          className="w-16 h-16 rounded-xl object-cover border-2 border-gray-200 group-hover:border-emerald-400 transition"
+                          onError={e => e.target.parentElement.style.display = 'none'}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-xl transition flex items-center justify-center">
+                          <svg className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                          </svg>
+                        </div>
+                        <p className="text-xs text-gray-400 text-center mt-1">Lihat foto</p>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Detail waktu */}
+                  <div className="border-t border-gray-50 grid grid-cols-2 divide-x divide-gray-50">
+                    <div className="px-5 py-3">
+                      <p className="text-xs text-gray-400 mb-1">📥 Check In</p>
+                      <p className="font-bold text-emerald-600 text-base">{formatTime(att.CheckIn)}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{formatDateTime(att.CheckIn)}</p>
+                    </div>
+                    <div className="px-5 py-3">
+                      <p className="text-xs text-gray-400 mb-1">📤 Check Out</p>
+                      {sudahKeluar ? (
+                        <>
+                          <p className="font-bold text-red-500 text-base">{formatTime(att.CheckOut)}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{formatDateTime(att.CheckOut)}</p>
+                        </>
+                      ) : (
+                        <p className="text-orange-400 text-sm font-medium">Belum checkout</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )) : (
-              <div className="bg-white rounded-2xl p-12 shadow-sm text-center">
-                <p className="text-4xl mb-3">📋</p>
-                <p className="text-gray-500">Tidak ada data absensi pada tanggal ini</p>
-              </div>
-            )}
+              )
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl p-12 shadow-sm text-center">
+            <p className="text-4xl mb-3">📋</p>
+            <p className="text-gray-500 font-medium">Tidak ada data absensi</p>
+            <p className="text-gray-400 text-sm mt-1">Pada tanggal {formatDate(date)}</p>
           </div>
         )}
       </div>
+
+      {/* Modal Foto */}
+      {selectedPhoto && (
+        <div
+          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <div className="bg-white rounded-2xl overflow-hidden max-w-sm w-full shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <p className="font-semibold text-gray-800">📸 Bukti Foto — {selectedPhoto.name}</p>
+              <button onClick={() => setSelectedPhoto(null)} className="p-1 hover:bg-gray-100 rounded-lg transition">
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <img src={selectedPhoto.url} alt={selectedPhoto.name} className="w-full object-contain max-h-96" />
+          </div>
+        </div>
+      )}
     </Layout>
   )
 }

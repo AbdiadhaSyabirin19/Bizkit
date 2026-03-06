@@ -19,16 +19,6 @@ func GetSalesByPeriod(start, end time.Time) ([]model.Sale, error) {
 	return sales, result.Error
 }
 
-func GetSaleItemsByPeriod(start, end time.Time) ([]model.SaleItem, error) {
-	var items []model.SaleItem
-	result := config.DB.
-		Preload("Product.Category").
-		Joins("JOIN sales ON sales.id = sale_items.sale_id").
-		Where("sales.created_at BETWEEN ? AND ?", start, end).
-		Find(&items)
-	return items, result.Error
-}
-
 func GetAttendanceByDate(date time.Time) ([]model.Attendance, error) {
 	var attendances []model.Attendance
 	start := date.Format("2006-01-02") + " 00:00:00"
@@ -48,4 +38,15 @@ func GetShiftsByPeriod(start, end time.Time) ([]model.Shift, error) {
 		Order("start_time DESC").
 		Find(&shifts)
 	return shifts, result.Error
+}
+
+func GetSaleItemsByPeriod(start, end time.Time) ([]model.SaleItem, error) {
+    var items []model.SaleItem
+    result := config.DB.
+        Preload("Product").
+        Preload("Product.Category"). // ← pastikan ini ada
+        Joins("JOIN sales ON sales.id = sale_items.sale_id").
+        Where("sales.created_at BETWEEN ? AND ?", start, end).
+        Find(&items)
+    return items, result.Error
 }

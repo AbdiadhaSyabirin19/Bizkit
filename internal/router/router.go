@@ -132,6 +132,7 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/price-categories/:id/products", handler.GetProductPricesByCategory)
 			protected.POST("/price-categories/:id/products", handler.UpsertProductPrice)
 			protected.DELETE("/price-categories/:id/products/:product_id", handler.DeleteProductPrice)
+			protected.GET("/price-categories/:id", handler.GetPriceCategoryByID)
 		}
 	}
 

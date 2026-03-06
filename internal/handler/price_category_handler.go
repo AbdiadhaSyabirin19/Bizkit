@@ -2,11 +2,12 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
+    "strconv"
 
-	"bizkit-backend/internal/service"
-
-	"github.com/gin-gonic/gin"
+    "bizkit-backend/config"
+    "bizkit-backend/internal/model"
+    "bizkit-backend/internal/service"
+    "github.com/gin-gonic/gin"
 )
 
 func GetAllPriceCategories(c *gin.Context) {
@@ -20,17 +21,13 @@ func GetAllPriceCategories(c *gin.Context) {
 }
 
 func GetPriceCategoryByID(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "ID tidak valid"})
-		return
-	}
-	cat, err := service.GetPriceCategoryByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"message": "OK", "data": cat})
+    id, _ := strconv.Atoi(c.Param("id"))
+    var pc model.PriceCategory
+    if err := config.DB.First(&pc, id).Error; err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"message": "Tidak ditemukan"})
+        return
+    }
+    c.JSON(http.StatusOK, gin.H{"message": "OK", "data": pc})
 }
 
 func CreatePriceCategory(c *gin.Context) {

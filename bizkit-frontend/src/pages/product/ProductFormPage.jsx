@@ -30,6 +30,17 @@ export default function ProductFormPage() {
     custom_prices: {}
   })
 
+  const [errors, setErrors] = useState({})
+
+  const validate = () => {
+    const e = {}
+    if (!form.name.trim()) e.name = 'Nama produk wajib diisi'
+    if (!form.category_id) e.category_id = 'Kategori wajib dipilih'
+    if (!form.price || Number(form.price) <= 0) e.price = 'Harga jual wajib diisi dan lebih dari 0'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
   useEffect(() => {
     fetchMasterData()
     if (isEdit) fetchProduct()
@@ -114,7 +125,7 @@ export default function ProductFormPage() {
   }
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.price) return
+    if (!validate()) return
     setSaving(true)
     try {
       const payload = {
@@ -140,7 +151,6 @@ export default function ProductFormPage() {
         productID = getID(res.data.data)
       }
 
-      // Simpan custom prices
       await Promise.all(
         priceCategories.map(pc => {
           const pcID = getID(pc)
@@ -226,44 +236,89 @@ export default function ProductFormPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Kode Produk</label>
-                  <input type="text" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="PRD-001" className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                  <input
+                    type="text"
+                    value={form.code}
+                    onChange={e => setForm(f => ({ ...f, code: e.target.value }))}
+                    placeholder="PRD-001"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nama Produk <span className="text-red-400">*</span></label>
-                  <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Nama produk" className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={e => {
+                      setForm(f => ({ ...f, name: e.target.value }))
+                      if (errors.name) setErrors(er => ({ ...er, name: '' }))
+                    }}
+                    placeholder="Nama produk"
+                    className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                  />
+                  {errors.name && <p className="text-xs text-red-400 mt-1">⚠ {errors.name}</p>}
                 </div>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
-                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Deskripsi produk (opsional)" rows={2} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" />
+                <textarea
+                  value={form.description}
+                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                  placeholder="Deskripsi produk (opsional)"
+                  rows={2}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none"
+                />
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                  <select value={form.category_id} onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Kategori <span className="text-red-400">*</span></label>
+                  <select
+                    value={form.category_id}
+                    onChange={e => {
+                      setForm(f => ({ ...f, category_id: e.target.value }))
+                      if (errors.category_id) setErrors(er => ({ ...er, category_id: '' }))
+                    }}
+                    className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${errors.category_id ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                  >
                     <option value="">Pilih Kategori</option>
                     {categories.map(c => <option key={getID(c)} value={getID(c)}>{c.name}</option>)}
                   </select>
+                  {errors.category_id && <p className="text-xs text-red-400 mt-1">⚠ {errors.category_id}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Merek</label>
-                  <select value={form.brand_id} onChange={e => setForm(f => ({ ...f, brand_id: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                  <select
+                    value={form.brand_id}
+                    onChange={e => setForm(f => ({ ...f, brand_id: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  >
                     <option value="">Pilih Merek</option>
                     {brands.map(b => <option key={getID(b)} value={getID(b)}>{b.name}</option>)}
                   </select>
                 </div>
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Satuan</label>
-                  <select value={form.unit_id} onChange={e => setForm(f => ({ ...f, unit_id: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                  <select
+                    value={form.unit_id}
+                    onChange={e => setForm(f => ({ ...f, unit_id: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  >
                     <option value="">Pilih Satuan</option>
                     {units.map(u => <option key={getID(u)} value={getID(u)}>{u.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                  <select
+                    value={form.status}
+                    onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  >
                     <option value="active">Aktif</option>
                     <option value="inactive">Nonaktif</option>
                   </select>
@@ -280,8 +335,18 @@ export default function ProductFormPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Harga Jual (Default) <span className="text-red-400">*</span></label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
-                  <input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0" className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                  <input
+                    type="number"
+                    value={form.price}
+                    onChange={e => {
+                      setForm(f => ({ ...f, price: e.target.value }))
+                      if (errors.price) setErrors(er => ({ ...er, price: '' }))
+                    }}
+                    placeholder="0"
+                    className={`w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${errors.price ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                  />
                 </div>
+                {errors.price && <p className="text-xs text-red-400 mt-1">⚠ {errors.price}</p>}
               </div>
 
               {priceCategories.length > 0 && (
@@ -319,7 +384,8 @@ export default function ProductFormPage() {
           {/* Varian */}
           {variants.length > 0 && (
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-              <h3 className="font-semibold text-gray-800 mb-4">Varian Produk</h3>
+              <h3 className="font-semibold text-gray-800 mb-1">Varian Produk</h3>
+              <p className="text-xs text-gray-400 mb-3">Opsional — pilih varian yang tersedia untuk produk ini</p>
               <div className="space-y-2">
                 {variants.map(v => {
                   const vid = getID(v)
@@ -343,7 +409,8 @@ export default function ProductFormPage() {
           {/* Outlet */}
           {outlets.length > 0 && (
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-              <h3 className="font-semibold text-gray-800 mb-4">Outlet</h3>
+              <h3 className="font-semibold text-gray-800 mb-1">Outlet</h3>
+              <p className="text-xs text-gray-400 mb-3">Opsional — pilih outlet yang menjual produk ini</p>
               <div className="space-y-2">
                 {outlets.map(o => {
                   const oid = getID(o)

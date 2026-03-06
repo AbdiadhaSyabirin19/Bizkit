@@ -10,17 +10,23 @@ import (
 )
 
 type UserRequest struct {
-	Name     string `json:"name" binding:"required"`
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password"`
-	RoleID   *uint  `json:"role_id"`
+	Name            string `json:"name" binding:"required"`
+	Username        string `json:"username" binding:"required"`
+	Password        string `json:"password"`
+	Email           string `json:"email"`
+	RoleID          *uint  `json:"role_id"`
+	OutletID        *uint  `json:"outlet_id"`
+	CanAccessCenter bool   `json:"can_access_center"`
 }
 
 type UpdateUserRequest struct {
-	Name     string `json:"name" binding:"required"`
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password"`
-	RoleID   *uint  `json:"role_id"`
+	Name            string `json:"name" binding:"required"`
+	Username        string `json:"username" binding:"required"`
+	Password        string `json:"password"`
+	Email           string `json:"email"`
+	RoleID          *uint  `json:"role_id"`
+	OutletID        *uint  `json:"outlet_id"`
+	CanAccessCenter bool   `json:"can_access_center"`
 }
 
 func GetAllUsers(search string) ([]model.User, error) {
@@ -36,7 +42,6 @@ func GetUserByID(id uint) (*model.User, error) {
 }
 
 func CreateUser(req UserRequest) (*model.User, error) {
-	// Cek username sudah ada
 	existing, _ := repository.GetUserByUsername(req.Username)
 	if existing != nil && existing.ID != 0 {
 		return nil, errors.New("Username sudah digunakan")
@@ -52,10 +57,13 @@ func CreateUser(req UserRequest) (*model.User, error) {
 	}
 
 	user := model.User{
-		Name:     req.Name,
-		Username: req.Username,
-		Password: string(hashed),
-		RoleID:   req.RoleID,
+		Name:            req.Name,
+		Username:        req.Username,
+		Password:        string(hashed),
+		Email:           req.Email,           // ← tambah
+		RoleID:          req.RoleID,
+		OutletID:        req.OutletID,        // ← tambah
+		CanAccessCenter: req.CanAccessCenter, // ← tambah
 	}
 
 	err = repository.CreateUser(&user)
@@ -73,17 +81,18 @@ func UpdateUser(id uint, req UpdateUserRequest) (*model.User, error) {
 		return nil, errors.New("User tidak ditemukan")
 	}
 
-	// Cek username sudah dipakai user lain
 	existing, _ := repository.GetUserByUsername(req.Username)
 	if existing != nil && existing.ID != 0 && existing.ID != id {
 		return nil, errors.New("Username sudah digunakan")
 	}
 
-	user.Name = req.Name
-	user.Username = req.Username
-	user.RoleID = req.RoleID
+	user.Name            = req.Name
+	user.Username        = req.Username
+	user.Email           = req.Email           // ← tambah
+	user.RoleID          = req.RoleID
+	user.OutletID        = req.OutletID        // ← tambah
+	user.CanAccessCenter = req.CanAccessCenter // ← tambah
 
-	// Update password hanya kalau diisi
 	if req.Password != "" {
 		hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 		if err != nil {

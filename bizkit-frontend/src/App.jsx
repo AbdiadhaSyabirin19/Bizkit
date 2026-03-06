@@ -30,7 +30,6 @@ import VariantFormPage from './pages/variant/VariantFormPage'
 import OutletFormPage from './pages/outlet/OutletFormPage'
 import UnitFormPage from './pages/unit/UnitFormPage'
 import PriceCategoryFormPage from './pages/price/PriceCategoryFormPage'
-import PriceProductPage from './pages/price/PriceProductPage'
 
 
 
@@ -94,7 +93,6 @@ function AppRoutes() {
       <Route path="/units/:id/edit" element={<PrivateRoute><UnitFormPage /></PrivateRoute>} />
       <Route path="/price-categories/add" element={<PrivateRoute><PriceCategoryFormPage /></PrivateRoute>} />
       <Route path="/price-categories/:id/edit" element={<PrivateRoute><PriceCategoryFormPage /></PrivateRoute>} />
-      <Route path="/price-categories/:id/products" element={<PrivateRoute><PriceProductPage /></PrivateRoute>} />
       <Route path="/" element={<Navigate to="/dashboard" />} />
     </Routes>
   )

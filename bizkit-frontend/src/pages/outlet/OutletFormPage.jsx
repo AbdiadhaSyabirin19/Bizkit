@@ -17,6 +17,17 @@ export default function OutletFormPage() {
     status: 'active',
   })
 
+  const [errors, setErrors] = useState({})
+
+  const validate = () => {
+    const e = {}
+    if (!form.name.trim()) e.name = 'Nama outlet wajib diisi'
+    if (form.phone && !/^[0-9+\-\s]+$/.test(form.phone)) e.phone = 'Format nomor telepon tidak valid'
+    if (!form.address.trim()) e.address = 'Alamat outlet wajib diisi'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
   useEffect(() => {
     if (isEdit) fetchOutlet()
   }, [id])
@@ -37,7 +48,7 @@ export default function OutletFormPage() {
   }
 
   const handleSave = async () => {
-    if (!form.name.trim()) return
+    if (!validate()) return
     setSaving(true)
     try {
       if (isEdit) {
@@ -84,11 +95,15 @@ export default function OutletFormPage() {
               <input
                 type="text"
                 value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                onChange={e => {
+                  setForm(f => ({ ...f, name: e.target.value }))
+                  if (errors.name) setErrors(er => ({ ...er, name: '' }))
+                }}
                 placeholder="Contoh: Outlet Pusat, Cabang Selatan"
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                 autoFocus
               />
+              {errors.name && <p className="text-xs text-red-400 mt-1">⚠ {errors.name}</p>}
             </div>
 
             <div>
@@ -98,8 +113,9 @@ export default function OutletFormPage() {
                 onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
                 placeholder="Alamat lengkap outlet"
                 rows={3}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none"
-              />
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none"
+                />
+                {errors.address && <p className="text-xs text-red-400 mt-1">⚠ {errors.address}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -108,10 +124,14 @@ export default function OutletFormPage() {
                 <input
                   type="text"
                   value={form.phone}
-                  onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                  onChange={e => {
+                    setForm(f => ({ ...f, phone: e.target.value }))
+                    if (errors.phone) setErrors(er => ({ ...er, phone: '' }))
+                  }}
                   placeholder="08xxxxxxxxxx"
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 ${errors.phone ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                 />
+                {errors.phone && <p className="text-xs text-red-400 mt-1">⚠ {errors.phone}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>

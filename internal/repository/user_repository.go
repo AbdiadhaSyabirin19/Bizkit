@@ -7,19 +7,17 @@ import (
 
 func GetAllUsers(search string) ([]model.User, error) {
 	var users []model.User
-	query := config.DB.Model(&model.User{}).Preload("Role")
-
+	query := config.DB.Preload("Role").Preload("Outlet")
 	if search != "" {
-		query = query.Where("name LIKE ?", "%"+search+"%")
+		query = query.Where("name LIKE ? OR username LIKE ?", "%"+search+"%", "%"+search+"%")
 	}
-
 	result := query.Find(&users)
 	return users, result.Error
 }
 
 func GetUserByID(id uint) (*model.User, error) {
 	var user model.User
-	result := config.DB.Preload("Role").First(&user, id)
+	result := config.DB.Preload("Role").Preload("Outlet").First(&user, id)
 	return &user, result.Error
 }
 
@@ -34,7 +32,16 @@ func CreateUser(user *model.User) error {
 }
 
 func UpdateUser(user *model.User) error {
-	return config.DB.Save(user).Error
+	// Pakai Select agar field zero-value (false, nil, "") ikut tersimpan
+	return config.DB.Model(user).Select(
+		"name",
+		"username",
+		"email",
+		"password",
+		"role_id",
+		"outlet_id",
+		"can_access_center",
+	).Updates(user).Error
 }
 
 func DeleteUser(id uint) error {

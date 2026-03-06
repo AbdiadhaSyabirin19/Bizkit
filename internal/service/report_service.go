@@ -80,18 +80,27 @@ func GetTrendReport(startStr, endStr string) (map[string]interface{}, error) {
 	for _, item := range items {
 		// Per produk
 		productName := item.Product.Name
+		if productName == "" {
+			continue
+		}
 		if _, ok := productStats[productName]; !ok {
 			productStats[productName] = map[string]interface{}{
-				"name":   productName,
-				"qty":    0,
-				"omzet":  0.0,
+				"name":  productName,
+				"qty":   0,
+				"omzet": 0.0,
 			}
 		}
 		productStats[productName]["qty"] = productStats[productName]["qty"].(int) + item.Quantity
 		productStats[productName]["omzet"] = productStats[productName]["omzet"].(float64) + item.Subtotal
 
-		// Per kategori
-		categoryName := item.Product.Category.Name
+		// Per kategori — cek nil dulu!
+		categoryName := ""
+		if item.Product.Category.Name != "" {
+			categoryName = item.Product.Category.Name
+		} else {
+			categoryName = "Tanpa Kategori"
+		}
+
 		if _, ok := categoryStats[categoryName]; !ok {
 			categoryStats[categoryName] = map[string]interface{}{
 				"name":  categoryName,
